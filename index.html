@@ -20,6 +20,12 @@
       --radius: 16px;
       --radius2: 12px;
       --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+
+      /* Segment palette */
+      --seg-medical: #2dd4a8;
+      --seg-property: #f5a623;
+      --seg-fintech: #79b8ff;
+      --seg-telecom: #b48eff;
     }
     *{box-sizing:border-box}
     body{
@@ -176,6 +182,11 @@
     .msg{max-width: 92%; padding:10px 12px;border-radius: 14px; border:1px solid var(--line)}
     .msg.user{margin-left:auto;background: rgba(121,184,255,.10); border-color: rgba(121,184,255,.35)}
     .msg.ai{background: rgba(17,27,39,.55)}
+    .msg.typing .dots{display:inline-flex;gap:4px}
+    .msg.typing .dots span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+    .msg.typing .dots span:nth-child(2){animation-delay:.2s}
+    .msg.typing .dots span:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
     .msg .meta{font-size:11px;color:var(--muted);margin-top:6px}
     .hr{height:1px;background:var(--line);margin:10px 0}
     .tiny{font-size:12px}
@@ -280,6 +291,104 @@
       padding:10px;
     }
     canvas{display:block; width:100%; height:140px;}
+
+    /* ---- Visual hierarchy ---- */
+    .section-label{
+      font-size:11px; text-transform:uppercase; letter-spacing:1.5px;
+      color:var(--muted); padding-left:2px;
+    }
+    #tab-dash.grid{ gap:20px; }
+    .card-hero{
+      border-left:3px solid transparent;
+      border-image:linear-gradient(180deg, var(--accent), var(--good)) 1;
+    }
+    .kpi{ border-top:2px solid rgba(121,184,255,.25); }
+
+    /* Segment colored badges */
+    .seg-badge{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:5px 10px; border-radius:999px; font-size:12px;
+      border:1px solid var(--line);
+      background:rgba(17,27,39,.5); color:var(--muted);
+    }
+    .seg-badge .seg-dot{ width:8px; height:8px; border-radius:999px; }
+    .seg-badge[data-seg="medical"] .seg-dot{ background:var(--seg-medical); }
+    .seg-badge[data-seg="property"] .seg-dot{ background:var(--seg-property); }
+    .seg-badge[data-seg="fintech"] .seg-dot{ background:var(--seg-fintech); }
+    .seg-badge[data-seg="telecom"] .seg-dot{ background:var(--seg-telecom); }
+
+    /* Wizard strategy cards — segment borders */
+    .offerCard[data-seg="medical"]{ border-left:3px solid var(--seg-medical); }
+    .offerCard[data-seg="property"]{ border-left:3px solid var(--seg-property); }
+    .offerCard[data-seg="fintech"]{ border-left:3px solid var(--seg-fintech); }
+    .offerCard[data-seg="telecom"]{ border-left:3px solid var(--seg-telecom); }
+
+    /* Consumer segment chip coloring */
+    .chip[data-seg="medical"]{ border-color:rgba(45,212,168,.4); color:var(--seg-medical); }
+    .chip[data-seg="property"]{ border-color:rgba(245,166,35,.4); color:var(--seg-property); }
+    .chip[data-seg="fintech"]{ border-color:rgba(121,184,255,.4); color:var(--seg-fintech); }
+    .chip[data-seg="telecom"]{ border-color:rgba(180,142,255,.4); color:var(--seg-telecom); }
+
+    /* ---- Mobile: 600px ---- */
+    @media (max-width:600px){
+      /* Consumer portal inner columns stack */
+      #tab-consumer .cols-2{ grid-template-columns:1fr; }
+
+      /* Chat area */
+      .chat{ height:220px; }
+      .chatBar{ flex-direction:column; }
+      .chatBar input, .chatBar button{ width:100%; }
+
+      /* Range slider touch targets */
+      input[type="range"]{ height:36px; }
+      input[type="range"]::-webkit-slider-thumb{
+        width:28px; height:28px; -webkit-appearance:none; appearance:none;
+        border-radius:50%; background:var(--accent); border:2px solid var(--line); cursor:pointer;
+      }
+      input[type="range"]::-moz-range-thumb{
+        width:28px; height:28px; border-radius:50%;
+        background:var(--accent); border:2px solid var(--line); cursor:pointer;
+      }
+
+      /* Header nav — horizontal scroll */
+      nav{ overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      nav::-webkit-scrollbar{ display:none; }
+      .tab{ white-space:nowrap; flex-shrink:0; }
+      .pill{ font-size:11px; padding:6px 8px; }
+
+      /* Wizard — full-screen modal */
+      .modalOverlay{ padding:0; align-items:stretch; overflow:hidden; }
+      .modal{ width:100%; height:100vh; max-height:100vh; border-radius:0; display:flex; flex-direction:column; overflow:hidden; }
+      .modalBody{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:none; }
+      .modalFooter{ position:sticky; bottom:0; }
+      .modalHeader{ flex-direction:column; align-items:flex-start; gap:10px; }
+      .steps{ width:100%; justify-content:center; }
+
+      /* Wizard dropzone row */
+      .drop .row{ flex-direction:column; gap:10px; }
+      .drop textarea{ min-height:80px; }
+    }
+
+    /* ---- Mobile: 480px ---- */
+    @media (max-width:480px){
+      .wrap{ padding:12px 12px 24px; }
+      #tab-consumer .card{ padding:12px; }
+      #tab-consumer .btn{ width:100%; text-align:center; padding:12px; }
+      .account-header{ flex-direction:column; gap:12px; }
+      .account-header > div:last-child{ text-align:left; }
+      body.consumer-mode .consumer-header{ flex-direction:column; align-items:flex-start; gap:12px; }
+      .offerCTA{ flex-direction:column; }
+      .offerCTA .btn{ width:100%; text-align:center; }
+
+      /* Wizard step labels → numbers only */
+      .step span:not(.num){ display:none; }
+      .step{ padding:8px; }
+    }
+
+    /* ---- Standalone consumer mode ---- */
+    body.standalone-consumer header{ display:none; }
+    body.standalone-consumer .consumer-back{ display:none; }
+    body.standalone-consumer .open-standalone{ display:none; }
   </style>
 </head>
 <body>
@@ -300,7 +409,7 @@
       </nav>
       <div class="pill">
         <span class="dot warn" id="pilotDot"></span>
-        <span id="pilotLabel">Pilot: <strong>Not launched</strong></span>
+        <span id="pilotLabel">Engine: <strong>Not launched</strong></span>
       </div>
     </div>
   </div>
@@ -309,6 +418,7 @@
 <div class="wrap">
   <!-- DASHBOARD -->
   <section id="tab-dash" class="grid">
+    <div class="section-label">Overview</div>
     <div class="grid cols-3">
       <div class="kpi">
         <div class="label">Accounts</div>
@@ -324,15 +434,16 @@
       </div>
     </div>
 
+    <div class="section-label">Recovery Engine</div>
     <div class="grid cols-2">
-      <div class="card">
+      <div class="card card-hero">
         <div class="row" style="justify-content:space-between;align-items:flex-start">
           <div>
-            <h2 style="margin-bottom:6px">Creditor Pilot Setup</h2>
-            <div class="tiny muted">Upload → Choose strategy → Launch. This sets your pilot rules (segment scripts, thresholds, cadence).</div>
+            <h2 style="margin-bottom:6px">Recovery Engine</h2>
+            <div class="tiny muted">Upload accounts → Configure → Launch. Stride auto-detects segments and routes per account.</div>
           </div>
           <div class="row">
-            <button class="btn btn-primary" id="openWizard">Open pilot wizard</button>
+            <button class="btn btn-primary" id="openWizard">Configure engine</button>
           </div>
         </div>
 
@@ -362,12 +473,12 @@
       </div>
 
       <div class="card">
-        <h2>Pilot rules (active)</h2>
-        <div class="tiny muted">These are set by the wizard and influence scripts + offer thresholds.</div>
+        <h2>Engine rules (active)</h2>
+        <div class="tiny muted">Auto-applied per account segment. Scripts and thresholds route automatically.</div>
         <div class="hr"></div>
         <div class="grid" style="gap:10px">
           <div class="row" style="justify-content:space-between">
-            <div class="tiny muted">Primary segment</div>
+            <div class="tiny muted">Detected segments</div>
             <div class="badge"><span class="dot warn"></span><span id="ruleSegment">—</span></div>
           </div>
           <div class="row" style="justify-content:space-between">
@@ -386,6 +497,7 @@
           <div class="tiny muted" id="ruleScript">—</div>
           <div class="hr"></div>
           <div class="row" style="justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm open-standalone">Open in new tab</button>
             <button class="btn btn-primary btn-sm" id="jumpConsumer">Open Consumer Portal (selected account)</button>
           </div>
           <div class="tiny muted">Tip: Load sample data in the wizard, open any account, then try the AI offer cards (Option A/B/C).</div>
@@ -393,6 +505,7 @@
       </div>
     </div>
 
+    <div class="section-label">Accounts</div>
     <div class="card">
       <h2>Accounts</h2>
       <div class="tiny muted" style="margin-bottom:10px">Open an account to demo consumer repayment + AI negotiation.</div>
@@ -426,7 +539,10 @@
         <div class="tag">We help you get back on track</div>
       </div>
     </div>
-    <button class="consumer-back" id="exitConsumerMode">Exit consumer view</button>
+    <div class="row">
+      <button class="consumer-back open-standalone">Open in new tab</button>
+      <button class="consumer-back" id="exitConsumerMode">Exit consumer view</button>
+    </div>
   </div>
 
   <!-- CONSUMER -->
@@ -439,14 +555,13 @@
       <div class="split">
         <div class="grid" style="gap:14px">
           <div class="card" style="background:rgba(15,22,32,.55)">
-            <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div class="row account-header" style="justify-content:space-between;align-items:flex-start">
               <div>
                 <div class="tiny muted">Selected account</div>
                 <div style="font-size:16px;margin-top:4px" id="selName">—</div>
                 <div class="tiny muted" id="selMeta">—</div>
                 <div class="row" style="margin-top:8px">
                   <span class="chip" id="chipSegment">Segment: —</span>
-                  <span class="chip" id="chipTone">Tone: —</span>
                 </div>
               </div>
               <div style="text-align:right">
@@ -506,7 +621,7 @@
           </div>
         </div>
 
-        <div class="card" style="background:rgba(15,22,32,.55)">
+        <div class="card card-hero" style="background:rgba(15,22,32,.55)">
           <div class="row" style="justify-content:space-between">
             <h2 style="margin:0">AI Negotiator (demo)</h2>
             <button class="btn btn-primary" id="showOffers" style="background:linear-gradient(135deg,rgba(121,184,255,.22),rgba(38,208,124,.18));border-color:rgba(121,184,255,.55);font-weight:600;padding:10px 16px;font-size:13px;">Generate offers (A/B/C)</button>
@@ -517,12 +632,13 @@
           <div class="hr"></div>
 
           <div class="chat" id="chat"></div>
-          <div class="row" style="margin-top:10px">
-            <input id="chatInput" type="text" placeholder="Type: 'I can’t pay', 'lost my job', 'smaller payments', 'pay today'..." />
+          <div class="row chatBar" style="margin-top:10px">
+            <input id="chatInput" type="text" placeholder="Type: 'I can't pay', 'lost my job', 'smaller payments', 'pay today'..." />
             <button class="btn btn-primary" id="sendChat">Send</button>
           </div>
-          <div class="tiny muted" style="margin-top:8px">
-            Powered by Stride AI · Responses adapt to segment, delinquency, and account context.
+          <div class="tiny muted" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+            <span>Powered by Stride AI · Responses adapt to segment, delinquency, and account context.</span>
+            <button class="btn btn-ghost btn-sm" id="setApiKey" style="padding:4px 8px;font-size:11px">⚙️ API Key</button>
           </div>
         </div>
       </div>
@@ -598,17 +714,17 @@
   </section>
 </div>
 
-<!-- Pilot Wizard Modal -->
-<div id="wizardOverlay" class="modalOverlay hidden" role="dialog" aria-modal="true" aria-label="Pilot setup wizard">
+<!-- Recovery Engine Setup Modal -->
+<div id="wizardOverlay" class="modalOverlay hidden" role="dialog" aria-modal="true" aria-label="Recovery engine setup">
   <div class="modal">
     <div class="modalHeader">
       <div>
-        <div style="font-weight:700">Pilot Setup Wizard</div>
-        <div class="tiny muted">Upload → Choose strategy → Launch</div>
+        <div style="font-weight:700">Recovery Engine Setup</div>
+        <div class="tiny muted">Upload → Review segments → Launch</div>
       </div>
       <div class="steps">
         <div class="step active" data-step="1"><span class="num">1</span><span>Upload</span></div>
-        <div class="step" data-step="2"><span class="num">2</span><span>Strategy</span></div>
+        <div class="step" data-step="2"><span class="num">2</span><span>Configure</span></div>
         <div class="step" data-step="3"><span class="num">3</span><span>Launch</span></div>
       </div>
       <button class="btn btn-sm btn-ghost" id="closeWizard">Close</button>
@@ -674,56 +790,17 @@
       <div id="wizStep2" class="hidden">
         <div class="grid cols-2">
           <div class="card" style="background:rgba(15,22,32,.55)">
-            <h2>Choose primary segment strategy</h2>
-            <div class="tiny muted">This sets scripts, settlement thresholds, and plan factors. (You can expand to per-segment routing later.)</div>
+            <h2>Detected segments</h2>
+            <div class="tiny muted">Stride auto-routes each account to the correct strategy based on its segment field.</div>
             <div class="hr"></div>
-
-            <div class="grid" style="gap:10px">
-              <label class="offerCard" style="cursor:pointer">
-                <div class="offerHead">
-                  <div>
-                    <div class="offerTitle">Medical</div>
-                    <div class="offerDesc">Soft tone, higher acceptance of plans; reduces friction & complaints.</div>
-                  </div>
-                  <input type="radio" name="primarySegment" value="medical" checked />
-                </div>
-              </label>
-
-              <label class="offerCard" style="cursor:pointer">
-                <div class="offerHead">
-                  <div>
-                    <div class="offerTitle">Property</div>
-                    <div class="offerDesc">Move-out balances; emphasizes quick settlement + structured plans.</div>
-                  </div>
-                  <input type="radio" name="primarySegment" value="property" />
-                </div>
-              </label>
-
-              <label class="offerCard" style="cursor:pointer">
-                <div class="offerHead">
-                  <div>
-                    <div class="offerTitle">Fintech</div>
-                    <div class="offerDesc">Digital-first; encourages autopay and short-term repayment to preserve LTV.</div>
-                  </div>
-                  <input type="radio" name="primarySegment" value="fintech" />
-                </div>
-              </label>
-
-              <label class="offerCard" style="cursor:pointer">
-                <div class="offerHead">
-                  <div>
-                    <div class="offerTitle">Telecom / Utility</div>
-                    <div class="offerDesc">Higher delinquency cycles; more standardized thresholds & reminders.</div>
-                  </div>
-                  <input type="radio" name="primarySegment" value="telecom" />
-                </div>
-              </label>
+            <div class="grid" style="gap:10px" id="wizDetectedSegments">
+              <div class="tiny muted">Load accounts to see detected segments.</div>
             </div>
           </div>
 
           <div class="card" style="background:rgba(15,22,32,.55)">
             <h2>Operational settings</h2>
-            <div class="tiny muted">Cadence and measurement for the demo pilot.</div>
+            <div class="tiny muted">Cadence and measurement settings.</div>
             <div class="hr"></div>
             <div class="row" style="justify-content:space-between">
               <div class="tiny muted">Contact cadence (max messages/day)</div>
@@ -752,8 +829,8 @@
       <div id="wizStep3" class="hidden">
         <div class="grid cols-2">
           <div class="card" style="background:rgba(15,22,32,.55)">
-            <h2>Launch pilot</h2>
-            <div class="tiny muted">Locks the pilot rules and updates the dashboard. You can reset any time.</div>
+            <h2>Launch engine</h2>
+            <div class="tiny muted">Activates per-segment routing and updates the dashboard. You can reset any time.</div>
             <div class="hr"></div>
             <div class="row" style="justify-content:space-between">
               <div class="badge"><span class="dot good"></span><span id="launchReady">Ready: —</span></div>
@@ -771,7 +848,7 @@
             <div class="tiny muted">A clean narrative for an investor/partner demo.</div>
             <div class="hr"></div>
             <ol class="tiny muted" style="line-height:1.6;margin:0;padding-left:18px">
-              <li>Upload a CSV and select a segment strategy.</li>
+              <li>Upload a CSV — Stride auto-detects segments.</li>
               <li>Open an account → Consumer portal appears.</li>
               <li>Click <strong>Generate offers (A/B/C)</strong> and apply one.</li>
               <li>Accept plan / settlement and watch dashboard KPIs + chart update.</li>
@@ -808,7 +885,6 @@
     // pilot config
     pilot: {
       launched: false,
-      primarySegment: "medical",
       cadenceMaxPerDay: 3,
       metric: "recovery",
     },
@@ -823,6 +899,9 @@
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
   }
+
+  const SEG_LABELS = { medical:"Medical", property:"Property Mgmt", fintech:"FinTech", telecom:"Telecom" };
+  function segLabel(seg){ return SEG_LABELS[seg] || seg || "—"; }
 
   function logEvent(event, details){
     const tbody = document.getElementById("auditRows");
@@ -847,7 +926,7 @@
       script: "Medical balances: emphasize empathy, flexible plans, and low-friction resolution.",
     },
     property: {
-      label: "Property",
+      label: "Property Mgmt",
       tone: "Direct / fair",
       cadenceDefault: 3,
       planFactorBase: 1.025,
@@ -855,7 +934,7 @@
       script: "Move-out balances: emphasize closure, settlement options, and structured repayment.",
     },
     fintech: {
-      label: "Fintech",
+      label: "FinTech",
       tone: "Digital-first",
       cadenceDefault: 2,
       planFactorBase: 1.03,
@@ -863,7 +942,7 @@
       script: "Fintech delinquency: optimize for autopay, shorter plans, preserve customer relationship.",
     },
     telecom: {
-      label: "Telecom / Utility",
+      label: "Telecom",
       tone: "Standardized",
       cadenceDefault: 3,
       planFactorBase: 1.035,
@@ -872,21 +951,27 @@
     }
   };
 
-  function activeStrategy(){
-    return STRATEGIES[state.pilot.primarySegment] || STRATEGIES.medical;
+  function activeStrategy(account){
+    const seg = account ? account.segment : (selectedAccount()?.segment || "medical");
+    return STRATEGIES[seg] || STRATEGIES.medical;
   }
 
-  function settleThreshold(daysLate){
-    const s = activeStrategy().settleThresholds;
+  function detectedSegmentsSummary(){
+    const segs = [...new Set(state.accounts.map(a => a.segment).filter(Boolean))];
+    return segs.map(s => segLabel(s)).join(", ") || "—";
+  }
+
+  function settleThreshold(daysLate, account){
+    const s = activeStrategy(account).settleThresholds;
     if (daysLate >= 120) return s.gte120;
     if (daysLate >= 90) return s.gte90;
     if (daysLate >= 60) return s.gte60;
     return s.lt60;
   }
 
-  function planFactor(daysLate){
+  function planFactor(daysLate, account){
     // mild delinquency-based uplift + strategy base
-    const base = activeStrategy().planFactorBase;
+    const base = activeStrategy(account).planFactorBase;
     const dlAdj = (daysLate >= 120) ? 0.03 : (daysLate >= 90) ? 0.02 : (daysLate >= 60) ? 0.01 : 0.005;
     return base + dlAdj;
   }
@@ -952,6 +1037,7 @@
     syncPilotBadge();
     renderAll();
     renderWizardPreview();
+    renderWizDetectedSegments();
   }
 
   // -------------------- Sample data --------------------
@@ -1003,7 +1089,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     document.getElementById("wizBack").classList.toggle("hidden", wizStep === 1);
     document.getElementById("wizNext").classList.toggle("hidden", wizStep === 3);
 
-    if (wizStep === 2) renderWizStrategySummary();
+    if (wizStep === 2){ renderWizDetectedSegments(); renderWizStrategySummary(); }
     if (wizStep === 3) renderWizLaunchSummary();
   }
 
@@ -1024,7 +1110,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
         <td class="mono">${escapeHtml(a.account_id)}</td>
         <td>${money(toCents(a.balance))}</td>
         <td class="muted">${escapeHtml(String(a.days_late))}</td>
-        <td class="muted">${escapeHtml(a.segment || "—")}</td>
+        <td><span class="seg-badge" data-seg="${escapeHtml(a.segment || '')}"><span class="seg-dot"></span>${escapeHtml(segLabel(a.segment))}</span></td>
       `;
       tbody.appendChild(tr);
     });
@@ -1060,13 +1146,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     loadAccounts(parseCSV(text));
   });
 
-  // Wizard: strategy settings
-  document.querySelectorAll('input[name="primarySegment"]').forEach(r => {
-    r.addEventListener("change", ()=>{
-      state.pilot.primarySegment = document.querySelector('input[name="primarySegment"]:checked').value;
-      renderWizStrategySummary();
-    });
-  });
+  // Wizard: operational settings
   document.getElementById("wizCadence").addEventListener("change", ()=>{
     state.pilot.cadenceMaxPerDay = Number(document.getElementById("wizCadence").value);
     renderWizStrategySummary();
@@ -1076,29 +1156,64 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     renderWizStrategySummary();
   });
 
+  function renderWizDetectedSegments(){
+    const container = document.getElementById("wizDetectedSegments");
+    if (!state.accounts.length){
+      container.innerHTML = `<div class="tiny muted">Load accounts to see detected segments.</div>`;
+      return;
+    }
+    const segCounts = {};
+    state.accounts.forEach(a => {
+      const s = a.segment || "unknown";
+      segCounts[s] = (segCounts[s] || 0) + 1;
+    });
+    container.innerHTML = Object.keys(segCounts).map(seg => {
+      const strat = STRATEGIES[seg];
+      if (!strat) return `
+        <div class="offerCard" style="opacity:.6">
+          <div class="offerHead">
+            <div>
+              <div class="offerTitle">${escapeHtml(seg)}</div>
+              <div class="offerDesc">${segCounts[seg]} account${segCounts[seg]>1?"s":""} — no strategy mapped</div>
+            </div>
+            <span class="chip">?</span>
+          </div>
+        </div>`;
+      const th = strat.settleThresholds;
+      return `
+        <div class="offerCard" data-seg="${escapeHtml(seg)}">
+          <div class="offerHead">
+            <div>
+              <div class="offerTitle">${escapeHtml(strat.label)}</div>
+              <div class="offerDesc">${segCounts[seg]} account${segCounts[seg]>1?"s":""} — Tone: ${escapeHtml(strat.tone)}</div>
+              <div class="offerDesc">Thresholds: &lt;60d ${th.lt60}% / 60d ${th.gte60}% / 90d ${th.gte90}% / 120d+ ${th.gte120}%</div>
+            </div>
+            <span class="seg-badge" data-seg="${escapeHtml(seg)}"><span class="seg-dot"></span>${segCounts[seg]}</span>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
   function renderWizStrategySummary(){
-    const seg = state.pilot.primarySegment;
-    const strat = STRATEGIES[seg];
     const cadence = state.pilot.cadenceMaxPerDay;
-    const th = strat.settleThresholds;
+    const segs = [...new Set(state.accounts.map(a => a.segment).filter(Boolean))];
+    const segNames = segs.map(s => STRATEGIES[s]?.label || s).join(", ") || "None detected";
     const summary = [
-      `Primary: ${strat.label}`,
-      `Tone: ${strat.tone}`,
+      `Segments: ${segNames}`,
+      `Routing: automatic per account`,
       `Cadence: max ${cadence}/day`,
-      `Settlement thresholds: <60d ${th.lt60}%, 60–89d ${th.gte60}%, 90–119d ${th.gte90}%, 120d+ ${th.gte120}%`,
-      `Plan factor base: ${strat.planFactorBase.toFixed(3)}`,
-      `Script: ${strat.script}`
+      `Each segment uses its own tone, thresholds, and scripts.`
     ].join(" • ");
     document.getElementById("wizStrategySummary").textContent = summary;
   }
 
   function renderWizLaunchSummary(){
-    const seg = state.pilot.primarySegment;
-    const strat = STRATEGIES[seg];
-    document.getElementById("launchPrimary").textContent = `Primary: ${strat.label}`;
+    const segs = [...new Set(state.accounts.map(a => a.segment).filter(Boolean))];
+    const segNames = segs.map(s => STRATEGIES[s]?.label || s).join(", ") || "—";
+    document.getElementById("launchPrimary").textContent = `Segments: ${segNames}`;
     document.getElementById("launchReady").textContent = `Ready: ${state.accounts.length} accounts loaded`;
     document.getElementById("launchCopy").textContent =
-      `Launch will set cadence to ${state.pilot.cadenceMaxPerDay}/day and apply the ${strat.label} scripts/thresholds across the pilot.`;
+      `Launch will set cadence to ${state.pilot.cadenceMaxPerDay}/day and enable per-segment strategy routing across ${segs.length} segment${segs.length!==1?"s":""}.`;
   }
 
   document.getElementById("launchPilot").addEventListener("click", ()=>{
@@ -1107,7 +1222,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     // Apply wizard cadence to compliance selector too
     document.getElementById("maxPerDay").value = String(state.pilot.cadenceMaxPerDay);
 
-    logEvent("Pilot launched", `${activeStrategy().label} • cadence ${state.pilot.cadenceMaxPerDay}/day • accounts ${state.accounts.length}`);
+    logEvent("Engine launched", `${detectedSegmentsSummary()} • cadence ${state.pilot.cadenceMaxPerDay}/day • accounts ${state.accounts.length}`);
     syncPilotBadge();
     renderRulesCard();
     renderAll();
@@ -1119,10 +1234,10 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     const label = document.getElementById("pilotLabel");
     if (state.pilot.launched){
       dot.className = "dot good";
-      label.innerHTML = `Pilot: <strong>Launched</strong> • ${activeStrategy().label}`;
+      label.innerHTML = `Engine: <strong>Active</strong> • ${detectedSegmentsSummary()}`;
     } else {
       dot.className = "dot warn";
-      label.innerHTML = `Pilot: <strong>Not launched</strong>`;
+      label.innerHTML = `Engine: <strong>Not launched</strong>`;
     }
   }
 
@@ -1143,7 +1258,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     const avgDays = count ? Math.round(state.accounts.reduce((s,a)=> s + (Number(a.days_late)||0), 0) / count) : 0;
     document.getElementById("snapAvgDays").textContent = count ? `Avg days late: ${avgDays}` : "Avg days late: —";
 
-    document.getElementById("snapStrategy").textContent = state.pilot.launched ? `Strategy: ${activeStrategy().label}` : "Strategy: —";
+    document.getElementById("snapStrategy").textContent = state.pilot.launched ? `Segments: ${detectedSegmentsSummary()}` : "Segments: —";
 
     const recoveryPct = totalCents ? Math.round((state.recoveredCents / totalCents) * 1000) / 10 : 0;
     document.getElementById("snapRecovery").textContent = count ? `Recovery: ${recoveryPct}%` : "Recovery: —";
@@ -1163,7 +1278,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
         <td>${money(toCents(a.balance))}</td>
         <td><span class="badge">${severityDot(a.days_late)}<span>${escapeHtml(String(a.days_late))}d</span></span></td>
         <td>${escapeHtml(a.creditor || "—")}</td>
-        <td class="muted">${escapeHtml(a.segment || "—")}</td>
+        <td><span class="seg-badge" data-seg="${escapeHtml(a.segment || '')}"><span class="seg-dot"></span>${escapeHtml(segLabel(a.segment))}</span></td>
         <td class="muted">${escapeHtml(a.status || "Not started")}</td>
         <td><button class="btn btn-primary btn-sm">Open</button></td>
       `;
@@ -1173,25 +1288,38 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
   }
 
   function renderRulesCard(){
-    const strat = activeStrategy();
-    document.getElementById("ruleSegment").textContent = state.pilot.launched ? strat.label : "—";
-    document.getElementById("ruleCadence").textContent = state.pilot.launched ? `max ${state.pilot.cadenceMaxPerDay}/day` : "—";
+    const a = selectedAccount();
+    const launched = state.pilot.launched;
 
-    const th = strat.settleThresholds;
-    document.getElementById("ruleSettle").textContent = state.pilot.launched
-      ? `<60d ${th.lt60}% • 60–89d ${th.gte60}% • 90–119d ${th.gte90}% • 120d+ ${th.gte120}%`
+    // Show detected segments summary or selected account's segment
+    const segs = [...new Set(state.accounts.map(x => x.segment).filter(Boolean))];
+    document.getElementById("ruleSegment").textContent = launched
+      ? (a ? activeStrategy(a).label : segs.map(s => segLabel(s)).join(", ") || "—")
       : "—";
+    document.getElementById("ruleCadence").textContent = launched ? `max ${state.pilot.cadenceMaxPerDay}/day` : "—";
 
-    document.getElementById("rulePlanFactor").textContent = state.pilot.launched
-      ? `base ${strat.planFactorBase.toFixed(3)} + delinquency adj`
-      : "—";
-
-    document.getElementById("ruleScript").textContent = state.pilot.launched ? strat.script : "Launch pilot to activate scripts and thresholds.";
+    if (launched && a){
+      const strat = activeStrategy(a);
+      const th = strat.settleThresholds;
+      document.getElementById("ruleSettle").textContent =
+        `<60d ${th.lt60}% • 60–89d ${th.gte60}% • 90–119d ${th.gte90}% • 120d+ ${th.gte120}%`;
+      document.getElementById("rulePlanFactor").textContent =
+        `base ${strat.planFactorBase.toFixed(3)} + delinquency adj`;
+      document.getElementById("ruleScript").textContent = strat.script;
+    } else if (launched){
+      document.getElementById("ruleSettle").textContent = "Per-segment (select an account to view)";
+      document.getElementById("rulePlanFactor").textContent = "Per-segment (select an account to view)";
+      document.getElementById("ruleScript").textContent = "Select an account to see segment-specific scripts.";
+    } else {
+      document.getElementById("ruleSettle").textContent = "—";
+      document.getElementById("rulePlanFactor").textContent = "—";
+      document.getElementById("ruleScript").textContent = "Launch the engine to activate per-segment routing.";
+    }
   }
 
   function openAccount(id){
     if (!state.pilot.launched){
-      alert("Launch the pilot first (wizard) so scripts/thresholds are active.");
+      alert("Launch the recovery engine first so scripts and thresholds are active.");
       return;
     }
     state.selectedId = id;
@@ -1202,6 +1330,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     clearOffers();
     addAIMessage(initialAIMessage(a));
     renderConsumer();
+    renderRulesCard();
     setTab("consumer");
   }
 
@@ -1213,7 +1342,12 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     return state.accounts.find(a => a.account_id === state.selectedId) || null;
   }
 
-  function resetChat(){ chatEl.innerHTML = ""; }
+  let chatHistory = []; // {role, content} for OpenAI API
+
+  function resetChat(){
+    chatEl.innerHTML = "";
+    chatHistory = [];
+  }
   function clearOffers(){ offersEl.innerHTML = ""; }
 
   function addUserMessage(text){
@@ -1222,6 +1356,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     div.innerHTML = `<div>${escapeHtml(text)}</div><div class="meta">You • ${new Date().toLocaleTimeString()}</div>`;
     chatEl.appendChild(div);
     chatEl.scrollTop = chatEl.scrollHeight;
+    chatHistory.push({role:"user", content:text});
   }
 
   function addAIMessage(text){
@@ -1230,17 +1365,117 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     div.innerHTML = `<div>${escapeHtml(text)}</div><div class="meta">Stride AI • ${new Date().toLocaleTimeString()}</div>`;
     chatEl.appendChild(div);
     chatEl.scrollTop = chatEl.scrollHeight;
+    chatHistory.push({role:"assistant", content:text});
+  }
+
+  function showTyping(){
+    const div = document.createElement("div");
+    div.className = "msg ai typing";
+    div.id = "typingIndicator";
+    div.innerHTML = `<div class="dots"><span></span><span></span><span></span></div><div class="meta">Stride AI is thinking…</div>`;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return div;
+  }
+  function removeTyping(){
+    const el = document.getElementById("typingIndicator");
+    if (el) el.remove();
+  }
+
+  // -------------------- OpenAI API integration --------------------
+  function getApiKey(){
+    return localStorage.getItem("stride_openai_key") || "";
+  }
+  function promptApiKey(){
+    const key = prompt("Enter your OpenAI API key to enable live AI responses.\n\nThis is stored in localStorage (demo only). Leave blank for scripted fallback.");
+    if (key && key.trim()){
+      localStorage.setItem("stride_openai_key", key.trim());
+      return key.trim();
+    }
+    return "";
+  }
+
+  function buildSystemPrompt(a){
+    const strat = activeStrategy(a);
+    const b = Number(a.balance)||0;
+    const dl = Number(a.days_late)||0;
+    const th = strat.settleThresholds;
+    const dur = dl >= 120 ? 12 : dl >= 90 ? 10 : 6;
+    const per = planEstimate(b, dl, "monthly", dur, a);
+    const sPct = settleThreshold(dl, a);
+    const sAmt = settlementAmount(b, sPct);
+    return `You are Stride AI, a compassionate debt resolution assistant. You help consumers find a realistic path to resolve their balance.
+
+ACCOUNT CONTEXT:
+- Consumer: ${a.full_name || "Unknown"}
+- Balance: ${money(toCents(b))}
+- Days delinquent: ${dl}
+- Creditor: ${a.creditor || "Unknown"}
+- Segment: ${segLabel(a.segment)}
+- Current status: ${a.status || "Not started"}
+
+STRATEGY (set by creditor):
+- Tone: ${strat.tone}
+- Settlement thresholds: <60d ${th.lt60}%, 60-89d ${th.gte60}%, 90-119d ${th.gte90}%, 120d+ ${th.gte120}%
+- Realistic monthly payment: ~${money(toCents(per))} for ${dur} months
+- Realistic settlement: ~${sPct}% (${money(toCents(sAmt))})
+
+RULES:
+- Be warm, concise (2-3 sentences max), and human.
+- Never guilt or pressure — you're on the consumer's side.
+- Suggest concrete numbers from the context above when relevant.
+- If they mention hardship, lead with empathy first, options second.
+- You can suggest they use the payment plan builder, settlement tool, or the "Generate offers (A/B/C)" button in the portal.
+- This is a demo — if asked about real legal specifics, say "In a production system, we'd route to a licensed agent."
+- Do not use markdown formatting. Plain text only.`;
+  }
+
+  async function aiReplyLive(a, userText){
+    let key = getApiKey();
+    if (!key) return aiReplyScripted(a, userText); // no key → scripted fallback
+
+    // Ensure system prompt is first message
+    if (!chatHistory.length || chatHistory[0].role !== "system"){
+      chatHistory.unshift({role:"system", content: buildSystemPrompt(a)});
+    }
+
+    try {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: chatHistory,
+          max_tokens: 200,
+          temperature: 0.7
+        })
+      });
+      if (!res.ok){
+        const err = await res.json().catch(()=>({}));
+        console.warn("OpenAI API error:", res.status, err);
+        if (res.status === 401) localStorage.removeItem("stride_openai_key");
+        return aiReplyScripted(a, userText);
+      }
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content?.trim() || aiReplyScripted(a, userText);
+    } catch(e){
+      console.warn("OpenAI fetch failed:", e);
+      return aiReplyScripted(a, userText);
+    }
   }
 
   function initialAIMessage(a){
-    const strat = activeStrategy();
+    const strat = activeStrategy(a);
     const first = (a.full_name || "there").split(" ")[0];
-    return `Hi ${first} — ${strat.script} You can choose a payment plan, propose a settlement, or click “Generate offers (A/B/C)” for recommended options.`;
+    return `Hi ${first} — ${strat.script} You can choose a payment plan, propose a settlement, or click "Generate offers (A/B/C)" for recommended options.`;
   }
 
-  function planEstimate(balance, daysLate, freq, duration){
+  function planEstimate(balance, daysLate, freq, duration, account){
     const b = Number(balance)||0;
-    const factor = planFactor(daysLate);
+    const factor = planFactor(daysLate, account);
     const total = b * factor;
     const periods = Math.max(1, Number(duration)||1);
     return total / periods; // demo: no interest schedule—just factor spread
@@ -1253,10 +1488,10 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
 
   function settlementDecision(a, pct){
     const dl = Number(a.days_late)||0;
-    const threshold = settleThreshold(dl);
+    const threshold = settleThreshold(dl, a);
     // small balance discount in medical/property scenarios
     const b = Number(a.balance)||0;
-    const smallAdj = (b <= 400 && state.pilot.primarySegment !== "telecom") ? -3 : 0;
+    const smallAdj = (b <= 400 && a.segment !== "telecom") ? -3 : 0;
     return pct >= (threshold + smallAdj);
   }
 
@@ -1279,26 +1514,27 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
       document.getElementById("selBalance").textContent = "$0";
       document.getElementById("selStatus").textContent = "Not started";
       document.getElementById("chipSegment").textContent = "Segment: —";
-      document.getElementById("chipTone").textContent = "Tone: —";
+      document.getElementById("chipSegment").removeAttribute("data-seg");
       return;
     }
 
-    const strat = activeStrategy();
+    const strat = activeStrategy(a);
     hint.textContent = "We're here to help you find a path forward. Choose a plan, settle, or chat with us.";
 
     document.getElementById("selName").textContent = a.full_name || "—";
     document.getElementById("selMeta").textContent = `${a.account_id} • ${a.creditor || "—"} • ${a.days_late} days late`;
     document.getElementById("selBalance").textContent = money(toCents(a.balance));
     document.getElementById("selStatus").textContent = a.status || "Not started";
-    document.getElementById("chipSegment").textContent = `Segment: ${a.segment || strat.label.toLowerCase()}`;
-    document.getElementById("chipTone").textContent = `Tone: ${strat.tone}`;
+    const seg = a.segment || strat.label.toLowerCase();
+    document.getElementById("chipSegment").textContent = segLabel(seg);
+    document.getElementById("chipSegment").setAttribute("data-seg", seg);
 
     // plan labels
     const freq = document.querySelector('input[name="freq"]:checked').value;
     const dur = Number(document.getElementById("duration").value);
     document.getElementById("durLabel").textContent = String(dur);
     document.getElementById("durUnit").textContent = (freq === "weekly") ? "weeks" : "months";
-    const per = planEstimate(a.balance, a.days_late, freq, dur);
+    const per = planEstimate(a.balance, a.days_late, freq, dur, a);
     document.getElementById("planPayment").textContent =
       `${money(toCents(per))} / ${freq === "weekly" ? "week" : "month"} (simulated)`;
 
@@ -1307,10 +1543,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     document.getElementById("settleLabel").textContent = String(pct);
     const amt = settlementAmount(a.balance, pct);
     document.getElementById("settleAmt").textContent = `${money(toCents(amt))} one-time (simulated)`;
-
-    const threshold = settleThreshold(Number(a.days_late)||0);
-    document.getElementById("settleNote").textContent =
-      `Demo acceptance threshold at this delinquency: ~${threshold}% (varies by segment).`;
+    document.getElementById("settleNote").textContent = "Submit your offer — we'll review and respond right away.";
   }
 
   // plan controls
@@ -1324,7 +1557,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     if (!a) return alert("Open an account first.");
     const freq = document.querySelector('input[name="freq"]:checked').value;
     const dur = Number(document.getElementById("duration").value);
-    const per = planEstimate(a.balance, a.days_late, freq, dur);
+    const per = planEstimate(a.balance, a.days_late, freq, dur, a);
     a.status = `Plan accepted: ${money(toCents(per))}/${freq==="weekly"?"wk":"mo"} • ${dur} ${freq==="weekly"?"wks":"mos"}`;
     logEvent("Plan accepted", `${a.account_id} • ${a.status}`);
 
@@ -1349,10 +1582,10 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
       applyRecoveryDelta(toCents(amt), `${a.account_id} • settlement paid`);
       addAIMessage(`We can accept ${pct}% for ${money(toCents(amt))}. Once paid, the account will be resolved. (Demo)`);
     } else {
-      const threshold = settleThreshold(Number(a.days_late)||0);
+      const threshold = settleThreshold(Number(a.days_late)||0, a);
       const counterPct = Math.min(95, Math.max(threshold, pct + 8));
       const counterAmt = settlementAmount(a.balance, counterPct);
-      addAIMessage(`We can’t accept ${pct}% today. A likely accepted option is ${counterPct}% (${money(toCents(counterAmt))}) or a payment plan. (Demo)`);
+      addAIMessage(`We can't accept ${pct}% today. A likely accepted option is ${counterPct}% (${money(toCents(counterAmt))}) or a payment plan. (Demo)`);
       logEvent("Settlement counter (sim)", `${a.account_id} • Counter ${counterPct}%`);
     }
     renderAll();
@@ -1371,22 +1604,22 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
   function generateOfferPack(a){
     const b = Number(a.balance)||0;
     const dl = Number(a.days_late)||0;
-    const strat = activeStrategy();
+    const strat = activeStrategy(a);
 
     // Option A: Settlement (fast close)
-    const thr = settleThreshold(dl);
+    const thr = settleThreshold(dl, a);
     const settlePct = Math.min(92, Math.max(55, thr + (strat.label.includes("Medical") ? -2 : 0)));
     const settleAmt = settlementAmount(b, settlePct);
 
     // Option B: Short plan
     const bDur = (dl >= 120) ? 10 : (dl >= 90) ? 8 : 6;
-    const bFreq = (strat.label.includes("Fintech")) ? "weekly" : "monthly";
-    const bPer = planEstimate(b, dl, bFreq, bDur);
+    const bFreq = (strat.label.includes("FinTech")) ? "weekly" : "monthly";
+    const bPer = planEstimate(b, dl, bFreq, bDur, a);
 
     // Option C: Long plan (lower payment)
     const cDur = (dl >= 120) ? 18 : 12;
     const cFreq = "monthly";
-    const cPer = planEstimate(b, dl, cFreq, cDur);
+    const cPer = planEstimate(b, dl, cFreq, cDur, a);
 
     return [
       {
@@ -1452,15 +1685,20 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
       }
       logEvent("Offer applied", `${a.account_id} • ${of.key} • ${of.kind}`);
     });
-    explainBtn.addEventListener("click", ()=>{
-      addAIMessage(`Why ${of.key}? ${of.detail} If you need a different fit, tell me “smaller payments” or “pay today.” (Demo)`);
+    explainBtn.addEventListener("click", async ()=>{
+      const question = `Can you explain ${of.title} to me?`;
+      addUserMessage(question);
+      showTyping();
+      const resp = await aiReplyLive(a, question);
+      removeTyping();
+      addAIMessage(resp);
       logEvent("Offer explained", `${a.account_id} • ${of.key}`);
     });
     return div;
   }
 
   // Chat
-  document.getElementById("sendChat").addEventListener("click", () => {
+  document.getElementById("sendChat").addEventListener("click", async () => {
     const a = selectedAccount();
     if (!a) return alert("Open an account first.");
     const input = document.getElementById("chatInput");
@@ -1469,47 +1707,57 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     input.value = "";
     addUserMessage(text);
     logEvent("Consumer message", `${a.account_id} • "${text}"`);
-    const resp = aiReply(a, text);
+    showTyping();
+    const resp = await aiReplyLive(a, text);
+    removeTyping();
     addAIMessage(resp);
     logEvent("AI response", `${a.account_id} • "${resp}"`);
   });
 
-  function aiReply(a, userText){
+  // Also send on Enter key
+  document.getElementById("chatInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey){
+      e.preventDefault();
+      document.getElementById("sendChat").click();
+    }
+  });
+
+  function aiReplyScripted(a, userText){
     const t = userText.toLowerCase();
-    const strat = activeStrategy();
+    const strat = activeStrategy(a);
     const b = Number(a.balance)||0;
     const dl = Number(a.days_late)||0;
 
     const planHint = () => {
-      const freq = (strat.label.includes("Fintech") || dl >= 120) ? "weekly" : "monthly";
+      const freq = (strat.label.includes("FinTech") || dl >= 120) ? "weekly" : "monthly";
       const dur = dl >= 120 ? 12 : dl >= 90 ? 10 : 6;
-      const per = planEstimate(b, dl, freq, dur);
+      const per = planEstimate(b, dl, freq, dur, a);
       return `A realistic option is ${money(toCents(per))} per ${freq==="weekly"?"week":"month"} for ${dur} ${freq==="weekly"?"weeks":"months"}.`;
     };
 
     const settleHint = () => {
-      const pct = settleThreshold(dl);
+      const pct = settleThreshold(dl, a);
       const amt = settlementAmount(b, pct);
       return `If you can pay sooner, a typical settlement is ~${pct}% (${money(toCents(amt))}).`;
     };
 
     if (t.includes("lost my job") || t.includes("hardship") || t.includes("laid off")){
-      return `${strat.tone === "Supportive" ? "Understood." : "Got it."} We can move to a hardship plan. ${planHint()} If even that is tough, propose what you can do weekly and we’ll try to match it.`;
+      return `${strat.tone === "Supportive" ? "Understood." : "Got it."} We can move to a hardship plan. ${planHint()} If even that is tough, propose what you can do weekly and we'll try to match it.`;
     }
     if (t.includes("can't pay") || t.includes("cannot pay") || t.includes("no money")){
-      return `Thanks for being direct. Let’s find something workable. ${planHint()} ${settleHint()} You can also click “Generate offers (A/B/C)”.`;
+      return `Thanks for being direct. Let's find something workable. ${planHint()} ${settleHint()} You can also click "Generate offers (A/B/C)".`;
     }
     if (t.includes("smaller") || t.includes("lower") || t.includes("reduce") || t.includes("less")){
       return `We can reduce the payment by extending duration. ${planHint()} For the lowest payment, try Offer C after generating offers.`;
     }
     if (t.includes("pay today") || t.includes("pay now") || t.includes("today")){
-      return `${settleHint()} If you submit a settlement in the portal, we’ll show whether it’s likely accepted (demo).`;
+      return `${settleHint()} If you submit a settlement in the portal, we'll show whether it's likely accepted (demo).`;
     }
     if (t.includes("offer") || t.includes("options") || t.includes("a/b/c")){
-      return `Click “Generate offers (A/B/C)” and choose a recommended path. I’ll explain the tradeoffs if you want.`;
+      return `Click "Generate offers (A/B/C)" and choose a recommended path. I'll explain the tradeoffs if you want.`;
     }
     if (t.includes("stop") || t.includes("dont contact") || t.includes("do not contact")){
-      return `Noted. In a real system, we’d update contact preferences and honor applicable legal requirements. You can toggle consent on the Compliance tab.`;
+      return `Noted. In a real system, we'd update contact preferences and honor applicable legal requirements. You can toggle consent on the Compliance tab.`;
     }
     return `Got it. You can accept a payment plan or propose a settlement above. ${planHint()}`;
   }
@@ -1656,7 +1904,6 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     state.validationStamp = null;
     state.recoveryTimeline = [];
     state.pilot.launched = false;
-    state.pilot.primarySegment = "medical";
     state.pilot.cadenceMaxPerDay = 3;
     state.pilot.metric = "recovery";
 
@@ -1673,7 +1920,6 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     document.getElementById("maxPerDay").value = "3";
     document.getElementById("wizCadence").value = "3";
     document.getElementById("wizMetric").value = "recovery";
-    document.querySelectorAll('input[name="primarySegment"]').forEach(r => r.checked = (r.value === "medical"));
     syncPilotBadge();
 
     logEvent("Demo reset", "State cleared");
@@ -1681,13 +1927,70 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     setTab("dash");
   });
 
+  // -------------------- Standalone consumer view --------------------
+  function openStandaloneConsumer(){
+    const acctId = state.selectedId || (state.accounts.length ? state.accounts[0].account_id : '');
+    const url = window.location.pathname + '?view=consumer' + (acctId ? '&account=' + encodeURIComponent(acctId) : '');
+    window.open(url, '_blank');
+  }
+  document.querySelectorAll('.open-standalone').forEach(btn => {
+    btn.addEventListener('click', openStandaloneConsumer);
+  });
+
+  // API key settings button
+  document.getElementById("setApiKey").addEventListener("click", () => {
+    const current = getApiKey();
+    const msg = current
+      ? `Current key: ${current.slice(0,8)}...${current.slice(-4)}\n\nEnter new key (or leave blank to clear):`
+      : "Enter your OpenAI API key to enable live AI responses:";
+    const key = prompt(msg);
+    if (key === null) return; // cancelled
+    if (key.trim()){
+      localStorage.setItem("stride_openai_key", key.trim());
+      alert("API key saved. AI Negotiator is now live!");
+    } else {
+      localStorage.removeItem("stride_openai_key");
+      alert("API key cleared. Using scripted fallback.");
+    }
+  });
+
   // -------------------- Init --------------------
   // default rules card
   renderRulesCard();
   renderAll();
 
-  // If you want to start in wizard automatically, uncomment:
-  // openWizard();
+  // Auto-enter standalone consumer mode if URL param present
+  (function(){
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'consumer'){
+      document.body.classList.add('standalone-consumer');
+
+      // Auto-load sample data and launch engine silently
+      loadAccounts(parseCSV(SAMPLE));
+      state.pilot.launched = true;
+      syncPilotBadge();
+      renderRulesCard();
+
+      // Open specific account if provided, else first account
+      const acctParam = params.get('account');
+      const targetId = acctParam || (state.accounts.length ? state.accounts[0].account_id : null);
+      if (targetId){
+        state.selectedId = targetId;
+        const a = selectedAccount();
+        if (a){
+          resetChat();
+          clearOffers();
+          addAIMessage(initialAIMessage(a));
+        }
+      }
+
+      renderAll();
+      setTab('consumer');
+    }
+  })();
+
+  // Expose for testing
+  Object.assign(window, {state, loadAccounts, parseCSV, SAMPLE, openAccount, syncPilotBadge, renderRulesCard, renderAll, setTab});
 </script>
 </body>
 </html>
