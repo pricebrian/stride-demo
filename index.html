@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Stride — Recovery Payments (Front-End Only)</title>
+  <title>Stride — Recovery Technology Platform</title>
   <style>
     :root{
       --bg:#0b0f14;
@@ -182,6 +182,22 @@
     .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
     .hidden{display:none !important}
 
+    /* Consumer full-screen mode */
+    body.consumer-mode header{ display:none }
+    body.consumer-mode .wrap{ max-width:900px; padding-top:0 }
+    .consumer-header{
+      display:none;
+      padding:18px 0 14px;
+      border-bottom:1px solid var(--line);
+      margin-bottom:18px;
+    }
+    body.consumer-mode .consumer-header{ display:flex; align-items:center; justify-content:space-between; }
+    .consumer-header .consumer-brand{ display:flex; align-items:center; gap:10px; }
+    .consumer-header .consumer-brand h2{ font-size:16px; margin:0; }
+    .consumer-header .consumer-brand .tag{ font-size:12px; color:var(--muted); }
+    .consumer-back{ border:1px solid var(--line); background:rgba(17,27,39,.65); color:var(--text); padding:8px 14px; border-radius:10px; cursor:pointer; font-size:12px; transition:.15s; }
+    .consumer-back:hover{ border-color:rgba(121,184,255,.45); }
+
     /* Wizard modal */
     .modalOverlay{
       position:fixed; inset:0; background: rgba(0,0,0,.55);
@@ -273,8 +289,8 @@
       <div class="brand">
         <div class="logo" aria-hidden="true"></div>
         <div>
-          <h1>Resolve</h1>
-          <div class="tag">Pilot-ready recovery • front-end demo only</div>
+          <h1>Stride</h1>
+          <div class="tag">Recovery technology that preserves customer relationships</div>
         </div>
       </div>
       <nav>
@@ -401,6 +417,18 @@
     </div>
   </section>
 
+  <!-- Consumer-mode header (visible only in full-screen consumer mode) -->
+  <div class="consumer-header">
+    <div class="consumer-brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h2>Stride</h2>
+        <div class="tag">We help you get back on track</div>
+      </div>
+    </div>
+    <button class="consumer-back" id="exitConsumerMode">Exit consumer view</button>
+  </div>
+
   <!-- CONSUMER -->
   <section id="tab-consumer" class="grid hidden">
     <div class="card">
@@ -481,7 +509,7 @@
         <div class="card" style="background:rgba(15,22,32,.55)">
           <div class="row" style="justify-content:space-between">
             <h2 style="margin:0">AI Negotiator (demo)</h2>
-            <button class="btn btn-sm btn-ghost" id="showOffers">Generate offers (A/B/C)</button>
+            <button class="btn btn-primary" id="showOffers" style="background:linear-gradient(135deg,rgba(121,184,255,.22),rgba(38,208,124,.18));border-color:rgba(121,184,255,.55);font-weight:600;padding:10px 16px;font-size:13px;">Generate offers (A/B/C)</button>
           </div>
 
           <div class="offerGrid" id="offers" style="margin-top:10px"></div>
@@ -494,7 +522,7 @@
             <button class="btn btn-primary" id="sendChat">Send</button>
           </div>
           <div class="tiny muted" style="margin-top:8px">
-            Deterministic rule-based responses for demo purposes. Segment strategy changes thresholds + scripts.
+            Powered by Stride AI · Responses adapt to segment, delinquency, and account context.
           </div>
         </div>
       </div>
@@ -869,9 +897,12 @@
     document.getElementById("tab-dash").classList.toggle("hidden", name !== "dash");
     document.getElementById("tab-consumer").classList.toggle("hidden", name !== "consumer");
     document.getElementById("tab-compliance").classList.toggle("hidden", name !== "compliance");
+    // Consumer full-screen mode
+    document.body.classList.toggle("consumer-mode", name === "consumer");
   }
   document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
   document.getElementById("jumpConsumer").addEventListener("click", () => setTab("consumer"));
+  document.getElementById("exitConsumerMode").addEventListener("click", () => setTab("dash"));
 
   // -------------------- CSV parsing --------------------
   function splitCsvLine(line){
@@ -1196,7 +1227,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
   function addAIMessage(text){
     const div = document.createElement("div");
     div.className = "msg ai";
-    div.innerHTML = `<div>${escapeHtml(text)}</div><div class="meta">Resolve AI • ${new Date().toLocaleTimeString()}</div>`;
+    div.innerHTML = `<div>${escapeHtml(text)}</div><div class="meta">Stride AI • ${new Date().toLocaleTimeString()}</div>`;
     chatEl.appendChild(div);
     chatEl.scrollTop = chatEl.scrollHeight;
   }
@@ -1253,7 +1284,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     }
 
     const strat = activeStrategy();
-    hint.textContent = "Demo portal. Submitting actions updates KPIs, recoveries chart, and compliance logs.";
+    hint.textContent = "We're here to help you find a path forward. Choose a plan, settle, or chat with us.";
 
     document.getElementById("selName").textContent = a.full_name || "—";
     document.getElementById("selMeta").textContent = `${a.account_id} • ${a.creditor || "—"} • ${a.days_late} days late`;
