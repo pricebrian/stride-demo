@@ -46,9 +46,8 @@
     .topbar{display:flex;align-items:center;gap:14px;justify-content:space-between}
     .brand{display:flex;align-items:center;gap:10px}
     .logo{
-      width:34px;height:34px;border-radius:10px;
-      background: linear-gradient(135deg, rgba(121,184,255,.95), rgba(38,208,124,.9));
-      box-shadow: var(--shadow);
+      width:34px;height:34px;border-radius:6px;
+      object-fit:contain;
     }
     .brand h1{font-size:16px;margin:0;letter-spacing:.2px}
     .brand .tag{font-size:12px;color:var(--muted)}
@@ -486,10 +485,10 @@
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
+        <img class="logo" src="logo.svg" alt="Stride logo" />
         <div>
           <h1>Stride</h1>
-          <div class="tag">Recovery technology that preserves customer relationships</div>
+          <div class="tag">Payment recovery technology</div>
         </div>
       </div>
       <nav>
@@ -646,7 +645,7 @@
   <!-- Consumer-mode header (visible only in full-screen consumer mode) -->
   <div class="consumer-header">
     <div class="consumer-brand">
-      <div class="logo" aria-hidden="true"></div>
+      <img class="logo" src="logo.svg" alt="Stride logo" />
       <div>
         <h2>Stride</h2>
         <div class="tag">We help you get back on track</div>
