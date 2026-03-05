@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Stride — Recovery Technology Platform</title>
+  <title>EasyStreet — Recovery Technology Platform</title>
   <style>
     :root{
       --bg:#0b0f14;
@@ -75,6 +75,11 @@
       display:flex;gap:8px;align-items:center;
     }
     .pill strong{color:var(--text);font-weight:600}
+    .scenario-toggle{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:rgba(11,15,20,.35)}
+    .scenario-btn{border:none;background:transparent;color:var(--muted);padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;border-radius:0;white-space:nowrap}
+    .scenario-btn:not(:last-child){border-right:1px solid var(--line)}
+    .scenario-btn:hover{background:rgba(121,184,255,.08);color:var(--text)}
+    .scenario-btn.active{background:rgba(121,184,255,.16);color:var(--text)}
     .grid{display:grid;gap:14px}
     .cols-3{grid-template-columns: repeat(3, minmax(0, 1fr));}
     .cols-2{grid-template-columns: repeat(2, minmax(0, 1fr));}
@@ -129,7 +134,7 @@
       background: rgba(11,15,20,.18);
     }
     .btn-sm{padding:8px 10px;border-radius:10px;font-size:12px}
-    input[type="text"], textarea, input[type="range"], select{
+    input[type="text"], input[type="number"], textarea, input[type="range"], select{
       width:100%;
       border:1px solid var(--line);
       background: rgba(11,15,20,.35);
@@ -139,6 +144,9 @@
       font-size: 13px;
       outline: none;
     }
+    input[type="number"]{ -moz-appearance:textfield; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
     textarea{min-height:120px;resize:vertical}
     .drop{
       border: 1px dashed rgba(159,176,195,.45);
@@ -192,8 +200,50 @@
     .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
     .hidden{display:none !important}
 
+    /* Info tooltip */
+    .info-tip{
+      display:inline-flex;align-items:center;justify-content:center;
+      width:15px;height:15px;border-radius:999px;
+      font-size:10px;font-weight:700;font-style:normal;
+      color:var(--muted);border:1px solid var(--line);
+      background:rgba(17,27,39,.5);
+      cursor:help;position:relative;vertical-align:middle;margin-left:3px;
+    }
+    .info-tip:hover::after{
+      content:attr(data-tip);
+      position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+      background:rgba(15,22,32,.95);border:1px solid var(--line);
+      color:var(--text);font-size:11px;font-weight:400;
+      padding:8px 10px;border-radius:8px;white-space:normal;
+      width:220px;text-align:left;line-height:1.4;
+      z-index:60;pointer-events:none;
+      box-shadow:0 4px 16px rgba(0,0,0,.4);
+    }
+
     /* Consumer full-screen mode */
     body.consumer-mode header{ display:none }
+    /* Filter bar */
+    .filter-bar{
+      display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+      padding:10px 14px;
+      background:rgba(17,27,39,.5);
+      border:1px solid var(--line);
+      border-radius:var(--radius2);
+      margin-bottom:14px;
+    }
+    .filter-bar label{
+      font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;
+    }
+    .filter-bar select{
+      background:rgba(15,22,32,.7);
+      border:1px solid var(--line);color:var(--text);
+      padding:6px 10px;border-radius:8px;font-size:12px;
+      font-family:var(--font);cursor:pointer;
+    }
+    .filter-bar .filter-count{
+      margin-left:auto;font-size:11px;color:var(--muted);
+    }
+
     body.consumer-mode .wrap{ max-width:900px; padding-top:0 }
     .consumer-header{
       display:none;
@@ -485,9 +535,9 @@
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
-        <img class="logo" src="logo.svg" alt="Stride logo" />
+        <img class="logo" src="logo.svg" alt="EasyStreet logo" />
         <div>
-          <h1>Stride</h1>
+          <h1>EasyStreet</h1>
           <div class="tag">Payment recovery technology</div>
         </div>
       </div>
@@ -495,11 +545,13 @@
         <button class="tab active" data-tab="dash">Creditor Dashboard</button>
         <button class="tab" data-tab="consumer">Consumer Portal</button>
         <button class="tab" data-tab="compliance">Compliance</button>
+        <button class="tab" data-tab="pnl">EasyStreet P&L</button>
       </nav>
       <div class="pill">
         <span class="dot warn" id="pilotDot"></span>
         <span id="pilotLabel">Engine: <strong>Not launched</strong></span>
       </div>
+      <button class="btn btn-good btn-sm" id="simulateRecovery" disabled>▶ Simulate Recovery</button>
       <button class="btn btn-bad btn-sm" id="resetAll">Reset demo</button>
     </div>
   </div>
@@ -508,6 +560,16 @@
 <div class="wrap">
   <!-- DASHBOARD -->
   <section id="tab-dash" class="grid">
+    <!-- Creditor filter bar -->
+    <div class="filter-bar" id="dashFilterBar">
+      <label>Creditor:
+        <select id="dashCreditorSelect">
+          <option value="">All Creditors</option>
+        </select>
+      </label>
+      <span class="filter-count" id="dashFilterCount">Showing 0 accounts</span>
+    </div>
+
     <div class="dash-section">
       <div class="section-label">Overview</div>
       <div class="grid cols-3">
@@ -553,24 +615,11 @@
     </div>
 
     <div class="dash-section">
-      <div class="section-label">Upload Contacts & Configure Recovery Engine</div>
-      <div class="grid cols-2">
-        <div class="card card-hero">
-        <div class="row" style="justify-content:space-between;align-items:flex-start">
-          <div>
-            <h2 style="margin-bottom:6px">Recovery Engine</h2>
-            <div class="tiny muted">Upload accounts → Configure → Launch. Stride auto-detects segments and routes per account.</div>
-          </div>
-          <div class="row">
-            <button class="btn btn-primary" id="openWizard">Configure engine</button>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="row" style="justify-content:space-between">
+      <div class="section-label">Analytics</div>
+      <div class="card card-hero">
+        <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
           <div class="badge"><span class="dot good"></span><span id="snapAvgDays">Avg days late: —</span></div>
-          <div class="badge"><span class="dot warn"></span><span id="snapStrategy">Strategy: —</span></div>
+          <div class="badge"><span class="dot warn"></span><span id="snapStrategy">Segments: —</span></div>
           <div class="badge"><span class="dot good"></span><span id="snapRecovery">Recovery: —</span></div>
         </div>
 
@@ -586,33 +635,83 @@
 
         <div class="tiny muted" id="reminderResult" style="margin-top:8px"></div>
       </div>
+    </div>
 
-      <div class="card card-rules">
-        <h2>Active Engine Rules</h2>
-        <div class="tiny muted">Auto-applied per account segment. Scripts and thresholds route automatically.</div>
-        <div class="hr"></div>
-        <div class="grid" style="gap:10px">
-          <div class="row" style="justify-content:space-between">
-            <div class="tiny muted">Detected segments</div>
-            <div class="badge"><span class="dot warn"></span><span id="ruleSegment">—</span></div>
+    <div class="dash-section">
+      <div class="section-label">Upload Contacts</div>
+      <div class="grid cols-2">
+        <div class="card" style="background:rgba(15,22,32,.55)">
+          <h2>Upload accounts (CSV)</h2>
+          <div class="drop" id="dropzone">
+            <div class="tiny muted" style="margin-bottom:8px">Drag & drop a CSV, or choose a file.</div>
+            <div class="row" style="gap:8px;margin-bottom:10px">
+              <input id="fileInput" type="file" accept=".csv,text/csv" class="hidden" />
+              <button class="btn" id="pickFile">Choose CSV</button>
+              <button class="btn btn-primary" id="loadSample">Load sample</button>
+            </div>
+            <div class="tiny muted" style="word-break:break-all;font-size:11px;line-height:1.5;opacity:.7">Headers: <span class="mono">account_id, full_name, phone, email, balance, days_late, creditor, segment</span></div>
+            <div class="hr"></div>
+            <div class="tiny muted">Or paste CSV below:</div>
+            <textarea id="csvPaste" placeholder="Paste CSV here..."></textarea>
+            <div class="row" style="margin-top:10px;justify-content:flex-end">
+              <button class="btn btn-primary" id="parsePaste">Parse pasted CSV</button>
+            </div>
           </div>
+        </div>
+
+        <div class="card" style="background:rgba(15,22,32,.55)">
+          <h2>Data preview</h2>
+          <div class="tiny muted">Review rows and segments before configuring the engine.</div>
+          <div class="hr"></div>
           <div class="row" style="justify-content:space-between">
-            <div class="tiny muted">Contact cadence</div>
-            <div class="badge"><span class="dot warn"></span><span id="ruleCadence">—</span></div>
-          </div>
-          <div class="row" style="justify-content:space-between">
-            <div class="tiny muted">Settlement thresholds</div>
-            <div class="badge"><span class="dot good"></span><span id="ruleSettle">—</span></div>
-          </div>
-          <div class="row" style="justify-content:space-between">
-            <div class="tiny muted">Plan factor</div>
-            <div class="badge"><span class="dot good"></span><span id="rulePlanFactor">—</span></div>
+            <div class="badge"><span class="dot good"></span><span id="wizCount">0 accounts</span></div>
+            <div class="badge"><span class="dot warn"></span><span id="wizSegments">Segments: —</span></div>
           </div>
           <div class="hr"></div>
-          <div class="tiny muted" id="ruleScript">—</div>
+          <div style="overflow:auto;max-height:260px;border:1px solid var(--line);border-radius:12px">
+            <table>
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Balance</th>
+                  <th>Days</th>
+                  <th>Segment</th>
+                </tr>
+              </thead>
+              <tbody id="wizPreviewRows">
+                <tr><td colspan="4" class="muted">No data loaded.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
+
+    <div class="dash-section">
+      <div class="section-label">Recovery Engine</div>
+      <div class="card card-rules">
+        <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <h2 style="margin-bottom:4px">Active Engine Rules</h2>
+            <div class="tiny muted">Settlement thresholds (%) and plan factors by segment. Auto-applied to each account.</div>
+          </div>
+        </div>
+
+        <div class="row" style="justify-content:space-between;margin-bottom:10px">
+          <div class="badge"><span class="dot warn"></span><span id="ruleSegment">—</span></div>
+          <div class="badge"><span class="dot warn"></span><span id="ruleCadence">—</span></div>
+        </div>
+
+        <div class="hr"></div>
+        <div id="rulesThresholdsArea">
+          <div class="tiny muted">Launch the engine to see per-segment rules.</div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="row" style="justify-content:flex-end">
+          <button class="btn btn-primary" id="openWizard">Configure engine</button>
+        </div>
+      </div>
     </div>
 
     <div class="dash-section">
@@ -645,9 +744,9 @@
   <!-- Consumer-mode header (visible only in full-screen consumer mode) -->
   <div class="consumer-header">
     <div class="consumer-brand">
-      <img class="logo" src="logo.svg" alt="Stride logo" />
+      <img class="logo" src="logo.svg" alt="EasyStreet logo" />
       <div>
-        <h2>Stride</h2>
+        <h2>EasyStreet</h2>
         <div class="tag">We help you get back on track</div>
       </div>
     </div>
@@ -743,22 +842,18 @@
         </div>
 
         <div class="card card-hero" style="background:rgba(15,22,32,.55)">
-          <div class="row" style="justify-content:space-between">
-            <h2 style="margin:0">AI Negotiator (demo)</h2>
-            <button class="btn btn-primary" id="showOffers" style="background:linear-gradient(135deg,rgba(121,184,255,.22),rgba(38,208,124,.18));border-color:rgba(121,184,255,.55);font-weight:600;padding:10px 16px;font-size:13px;">Generate offers (A/B/C)</button>
-          </div>
-
-          <div class="offerGrid" id="offers" style="margin-top:10px"></div>
-
-          <div class="hr"></div>
+          <h2 style="margin:0 0 10px 0">Resolution Assistant</h2>
 
           <div class="chat" id="chat"></div>
           <div class="row chatBar" style="margin-top:10px">
             <input id="chatInput" type="text" placeholder="Type: 'I can't pay', 'lost my job', 'smaller payments', 'pay today'..." />
-            <button class="btn btn-primary" id="sendChat">Send</button>
+            <button class="btn btn-primary" id="sendChat">Send Message</button>
+            <button class="btn btn-primary" id="showOffers" style="background:linear-gradient(135deg,rgba(121,184,255,.22),rgba(38,208,124,.18));border-color:rgba(121,184,255,.55);font-weight:600;font-size:12px;white-space:nowrap;">Generate Offers</button>
           </div>
+
+          <div class="offerGrid" id="offers" style="margin-top:10px"></div>
           <div class="tiny muted" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
-            <span>Powered by Stride AI · Responses adapt to segment, delinquency, and account context.</span>
+            <span>Powered by EasyStreet AI · Responses adapt to segment, delinquency, and account context.</span>
             <button class="btn btn-ghost btn-sm" id="setApiKey" style="padding:4px 8px;font-size:11px">⚙️ API Key</button>
           </div>
         </div>
@@ -833,6 +928,257 @@
       </div>
     </div>
   </section>
+
+  <!-- ==================== EasyStreet P&L ==================== -->
+  <section id="tab-pnl" class="grid hidden">
+
+    <!-- P&L filter bar -->
+    <div class="filter-bar" id="pnlFilterBar">
+      <label>Creditor:
+        <select id="pnlCreditorSelect">
+          <option value="">All (Aggregate)</option>
+        </select>
+      </label>
+      <label>Segment:
+        <select id="pnlSegmentSelect">
+          <option value="">All Segments</option>
+        </select>
+      </label>
+      <span class="filter-count" id="pnlFilterCount">Showing 0 accounts</span>
+    </div>
+
+    <!-- Section 0: Assumptions & Model -->
+    <div class="dash-section">
+      <div class="section-label">Assumptions & Model</div>
+      <div class="card">
+        <div style="margin-bottom:10px">
+          <h2 style="margin-bottom:4px">Recovery Funnel Assumptions</h2>
+          <div class="tiny muted">Choose a scenario and commission rate. These drive all P&L projections. Run simulation to compare.</div>
+        </div>
+
+        <!-- Scenario toggle + Commission input -->
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="tiny muted" style="white-space:nowrap">Scenario:</span>
+            <div class="scenario-toggle" id="scenarioToggle">
+              <button class="scenario-btn" data-scenario="pessimistic">Pessimistic</button>
+              <button class="scenario-btn active" data-scenario="average">Average</button>
+              <button class="scenario-btn" data-scenario="optimistic">Optimistic</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+            <label class="tiny muted" style="white-space:nowrap">Commission:</label>
+            <input type="number" id="commissionInput" min="1" max="50" value="15" step="1"
+                   style="width:52px;padding:5px 6px;font-size:13px;font-weight:700;text-align:center;border-radius:8px;border:1px solid var(--line);background:rgba(11,15,20,.35);color:var(--text)" />
+            <span class="tiny muted">%</span>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <!-- Left: Funnel rates -->
+          <div>
+            <div class="tiny" style="font-weight:600;margin-bottom:8px">Contact & Outcome Rates</div>
+            <div style="display:flex;flex-direction:column;gap:6px" id="pnlAssumptionsList">
+              <div class="row" style="justify-content:space-between">
+                <span class="tiny muted">Response rate (% who engage)</span>
+                <span class="mono" style="font-size:12px" id="pnlAssumeResponse">—</span>
+              </div>
+              <div class="row" style="justify-content:space-between">
+                <span class="tiny muted">→ Settlement rate (% of responders)</span>
+                <span class="mono" style="font-size:12px" id="pnlAssumeSettle">—</span>
+              </div>
+              <div class="row" style="justify-content:space-between">
+                <span class="tiny muted">→ Plan acceptance rate (% of responders)</span>
+                <span class="mono" style="font-size:12px" id="pnlAssumePlan">—</span>
+              </div>
+              <div class="row" style="justify-content:space-between">
+                <span class="tiny muted">→ Decline rate (% of responders)</span>
+                <span class="mono" style="font-size:12px" id="pnlAssumeDecline">—</span>
+              </div>
+              <div class="hr"></div>
+              <div class="row" style="justify-content:space-between">
+                <span class="tiny muted">Plan default rate</span>
+                <span class="mono" style="font-size:12px" id="pnlAssumePlanDefault">—</span>
+              </div>
+              <div class="row" style="justify-content:space-between">
+                <span class="tiny muted">Avg plan payments before default</span>
+                <span class="mono" style="font-size:12px" id="pnlAssumeDefaultMonths">—</span>
+              </div>
+              <div class="row" style="justify-content:space-between">
+                <span class="tiny muted">Active plan avg completion</span>
+                <span class="mono" style="font-size:12px" id="pnlAssumePlanComplete">—</span>
+              </div>
+            </div>
+          </div>
+          <!-- Right: Simulated actuals -->
+          <div>
+            <div class="tiny" style="font-weight:600;margin-bottom:8px">Simulated Actuals</div>
+            <div style="display:flex;flex-direction:column;gap:6px" id="pnlSimActuals">
+              <div class="tiny muted" id="pnlSimPlaceholder">Run simulation to see actual outcomes.</div>
+            </div>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div class="tiny muted" style="font-style:italic">Projected recovery = (settlement rate × settlement value) + (plan rate × plan value × completion%) + (plan default rate × default payment value). Non-responders and declines recover $0.</div>
+      </div>
+    </div>
+
+    <!-- Section A: Revenue KPIs -->
+    <div class="dash-section">
+      <div class="section-label">Revenue KPIs</div>
+      <div class="seg-strip" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi" style="text-align:center">
+          <div class="tiny muted">Total Portfolio Value</div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px" id="pnlPortfolio">$0</div>
+        </div>
+        <div class="kpi" style="text-align:center">
+          <div class="tiny muted">Expected Settlement Revenue</div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px;color:var(--good)" id="pnlSettleRev">$0</div>
+        </div>
+        <div class="kpi" style="text-align:center">
+          <div class="tiny muted">Expected Plan Revenue</div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px;color:var(--warn)" id="pnlPlanRev">$0</div>
+        </div>
+        <div class="kpi" style="text-align:center">
+          <div class="tiny muted">SaaS Revenue (monthly)</div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px;color:var(--accent)" id="pnlSaasRev">$0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section B: Creditor Portfolio Analysis -->
+    <div class="dash-section">
+      <div class="section-label">Creditor Portfolio Analysis</div>
+      <div class="card">
+        <h2>Portfolio by Creditor</h2>
+        <div class="tiny muted" style="margin-bottom:10px">Revenue attribution and ROI scoring per creditor. Helps target the most profitable relationships.</div>
+        <div class="hr"></div>
+        <div style="overflow:auto;max-height:400px;border:1px solid var(--line);border-radius:12px">
+          <table style="font-size:12px;width:100%">
+            <thead>
+              <tr>
+                <th style="font-size:11px;padding:6px 4px">Creditor</th>
+                <th style="font-size:11px;padding:6px 4px;text-align:center">Accounts</th>
+                <th style="font-size:11px;padding:6px 4px;text-align:right">Total Balance</th>
+                <th style="font-size:11px;padding:6px 4px;text-align:center">Segment</th>
+                <th style="font-size:11px;padding:6px 4px;text-align:center">Avg Days Late</th>
+                <th style="font-size:11px;padding:6px 4px;text-align:right">Expected Recovery</th>
+                <th style="font-size:11px;padding:6px 4px;text-align:right">EasyStreet Revenue</th>
+                <th style="font-size:11px;padding:6px 4px;text-align:center">ROI Score</th>
+              </tr>
+            </thead>
+            <tbody id="pnlCreditorRows">
+              <tr><td colspan="8" class="muted tiny" style="padding:12px">Load accounts to see creditor analysis.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section C: Revenue Mix — Settlements vs Plans -->
+    <div class="dash-section">
+      <div class="section-label">Revenue Mix</div>
+      <div class="grid cols-2">
+        <div class="card" style="border-left:3px solid var(--good)">
+          <h2 style="color:var(--good)">Guaranteed Revenue — Settlements</h2>
+          <div class="tiny muted" style="margin-bottom:10px">This revenue is locked in once a settlement is accepted. No default risk.</div>
+          <div class="hr"></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="row" style="justify-content:space-between">
+              <span class="tiny muted">Settlement-eligible portfolio</span>
+              <span class="mono" id="pnlSettleTotal">$0</span>
+            </div>
+            <div class="row" style="justify-content:space-between">
+              <span class="tiny muted">EasyStreet commission (<span class="commRateLabel">15</span>%)</span>
+              <span class="mono" style="color:var(--good)" id="pnlSettleComm">$0</span>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div class="tiny muted" style="font-style:italic">Settlement revenue is guaranteed once accepted — no collection risk.</div>
+        </div>
+
+        <div class="card" style="border-left:3px solid var(--warn)">
+          <h2 style="color:var(--warn)">Projected Revenue — Payment Plans</h2>
+          <div class="tiny muted" style="margin-bottom:10px">Plans carry ~30% default risk. Actual revenue depends on plan completion rates.</div>
+          <div class="hr"></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="row" style="justify-content:space-between">
+              <span class="tiny muted">Plan total value (with factors)</span>
+              <span class="mono" id="pnlPlanTotal">$0</span>
+            </div>
+            <div class="row" style="justify-content:space-between">
+              <span class="tiny muted">Default-adjusted value (×70%)</span>
+              <span class="mono" style="color:var(--warn)" id="pnlPlanAdjusted">$0</span>
+            </div>
+            <div class="row" style="justify-content:space-between">
+              <span class="tiny muted">EasyStreet commission (<span class="commRateLabel">15</span>%)</span>
+              <span class="mono" style="color:var(--warn)" id="pnlPlanComm">$0</span>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div class="tiny muted" style="font-style:italic">~30% of plans default — budget conservatively on plan-path revenue.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section D: Pricing Strategy -->
+    <div class="dash-section">
+      <div class="section-label">Pricing Strategy</div>
+      <div class="card">
+        <h2>Commission Rate Modeling</h2>
+        <div class="tiny muted" style="margin-bottom:10px">EasyStreet's pre-collections advantage: undercut the industry, win creditors with technology-driven margins.</div>
+        <div class="hr"></div>
+        <div class="grid cols-2" style="gap:20px;align-items:start">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+              <span class="tiny muted" style="white-space:nowrap">EasyStreet rate:</span>
+              <input type="range" id="pnlRateSlider" min="5" max="40" value="15" style="flex:1;accent-color:var(--accent)" />
+              <span class="mono" style="font-size:18px;font-weight:700;min-width:50px;text-align:right" id="pnlRateLabel">15%</span>
+            </div>
+            <!-- Comparison bar -->
+            <div style="position:relative;height:36px;background:rgba(17,27,39,.6);border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:10px">
+              <div id="pnlRateBar" style="position:absolute;left:0;top:0;bottom:0;width:37.5%;background:linear-gradient(90deg,rgba(121,184,255,.3),rgba(121,184,255,.15));border-right:2px solid var(--accent);transition:width .2s"></div>
+              <div style="position:absolute;left:87.5%;top:0;bottom:0;width:2px;background:var(--bad);opacity:.6"></div>
+              <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--bad)">Industry 35%</div>
+            </div>
+            <div class="row" style="justify-content:space-between">
+              <span class="tiny muted">5%</span>
+              <span class="tiny muted">Break-even ~12%</span>
+              <span class="tiny muted">40%</span>
+            </div>
+          </div>
+          <div>
+            <div class="kpi" style="margin-bottom:10px">
+              <div class="tiny muted">Projected revenue at current rate</div>
+              <div style="font-size:18px;font-weight:700;margin-top:4px" id="pnlSliderRev">$0</div>
+            </div>
+            <div class="kpi" style="margin-bottom:10px">
+              <div class="tiny muted">Revenue at industry rate (35%)</div>
+              <div style="font-size:18px;font-weight:700;margin-top:4px;color:var(--muted)" id="pnlIndustryRev">$0</div>
+            </div>
+            <div class="kpi">
+              <div class="tiny muted">Your savings vs industry</div>
+              <div style="font-size:18px;font-weight:700;margin-top:4px;color:var(--good)" id="pnlSavings">$0</div>
+              <div class="tiny muted" style="margin-top:2px">This is the discount creditors get by choosing EasyStreet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section E: Segment Profitability -->
+    <div class="dash-section">
+      <div class="section-label">Segment Profitability</div>
+      <div class="seg-strip" id="pnlSegStrip" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi" style="text-align:center">
+          <div class="tiny muted">Load accounts to see segment profitability.</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
 </div>
 
 <!-- Recovery Engine Setup Modal -->
@@ -840,79 +1186,23 @@
   <div class="modal">
     <div class="modalHeader">
       <div>
-        <div style="font-weight:700">Recovery Engine Setup</div>
-        <div class="tiny muted">Upload → Review segments → Launch</div>
+        <div style="font-weight:700">Configure & Launch Engine</div>
+        <div class="tiny muted">Review segments → Launch</div>
       </div>
       <div class="steps">
-        <div class="step active" data-step="1"><span class="num">1</span><span>Upload</span></div>
-        <div class="step" data-step="2"><span class="num">2</span><span>Configure</span></div>
-        <div class="step" data-step="3"><span class="num">3</span><span>Launch</span></div>
+        <div class="step active" data-step="1"><span class="num">1</span><span>Configure</span></div>
+        <div class="step" data-step="2"><span class="num">2</span><span>Launch</span></div>
       </div>
       <button class="btn btn-sm btn-ghost" id="closeWizard">Close</button>
     </div>
 
     <div class="modalBody">
-      <!-- Step 1 -->
-      <div id="wizStep1">
-        <div class="grid cols-2">
-          <div class="card" style="background:rgba(15,22,32,.55)">
-            <h2>Upload accounts (CSV)</h2>
-            <div class="drop" id="dropzone">
-              <div class="row" style="justify-content:space-between">
-                <div>
-                  <div class="tiny muted">Drag & drop a CSV, or choose a file.</div>
-                  <div class="tiny muted">Headers: <span class="mono">account_id,full_name,phone,email,balance,days_late,creditor,segment</span></div>
-                </div>
-                <div class="row">
-                  <input id="fileInput" type="file" accept=".csv,text/csv" class="hidden" />
-                  <button class="btn" id="pickFile">Choose CSV</button>
-                  <button class="btn btn-primary" id="loadSample">Load sample</button>
-                </div>
-              </div>
-              <div class="hr"></div>
-              <div class="tiny muted">Or paste CSV below:</div>
-              <textarea id="csvPaste" placeholder="Paste CSV here..."></textarea>
-              <div class="row" style="margin-top:10px;justify-content:flex-end">
-                <button class="btn btn-primary" id="parsePaste">Parse pasted CSV</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="background:rgba(15,22,32,.55)">
-            <h2>Data preview</h2>
-            <div class="tiny muted">Sanity-check rows and segments before choosing strategy.</div>
-            <div class="hr"></div>
-            <div class="row" style="justify-content:space-between">
-              <div class="badge"><span class="dot good"></span><span id="wizCount">0 accounts</span></div>
-              <div class="badge"><span class="dot warn"></span><span id="wizSegments">Segments: —</span></div>
-            </div>
-            <div class="hr"></div>
-            <div style="overflow:auto;max-height:260px;border:1px solid var(--line);border-radius:12px">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th>Balance</th>
-                    <th>Days</th>
-                    <th>Segment</th>
-                  </tr>
-                </thead>
-                <tbody id="wizPreviewRows">
-                  <tr><td colspan="4" class="muted">No data loaded.</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="tiny muted" style="margin-top:10px">Tip: keep segments consistent (medical/property/fintech/telecom).</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 2 -->
+      <!-- Step 1: Configure -->
       <div id="wizStep2" class="hidden">
         <div class="grid cols-2">
           <div class="card" style="background:rgba(15,22,32,.55)">
             <h2>Detected segments</h2>
-            <div class="tiny muted">Stride auto-routes each account to the correct strategy based on its segment field.</div>
+            <div class="tiny muted">EasyStreet auto-routes each account to the correct strategy based on its segment field.</div>
             <div class="hr"></div>
             <div class="grid" style="gap:10px" id="wizDetectedSegments">
               <div class="tiny muted">Load accounts to see detected segments.</div>
@@ -946,35 +1236,31 @@
         </div>
       </div>
 
-      <!-- Step 3 -->
+      <!-- Step 2: Launch -->
       <div id="wizStep3" class="hidden">
         <div class="grid cols-2">
           <div class="card" style="background:rgba(15,22,32,.55)">
-            <h2>Launch engine</h2>
-            <div class="tiny muted">Activates per-segment routing and updates the dashboard. You can reset any time.</div>
+            <h2>Settlement thresholds</h2>
+            <div class="tiny muted">Minimum acceptance % by delinquency range. Adjust per segment before launch.</div>
+            <div class="hr"></div>
+            <div id="wizThresholds" style="overflow:auto"></div>
+          </div>
+
+          <div class="card" style="background:rgba(15,22,32,.55)">
+            <h2>Plan factors</h2>
+            <div class="tiny muted">Base rate applied to balance for payment plans. Delinquency adjustment added automatically.</div>
+            <div class="hr"></div>
+            <div id="wizPlanFactors"></div>
+
             <div class="hr"></div>
             <div class="row" style="justify-content:space-between">
               <div class="badge"><span class="dot good"></span><span id="launchReady">Ready: —</span></div>
               <div class="badge"><span class="dot warn"></span><span id="launchPrimary">Primary: —</span></div>
             </div>
-            <div class="hr"></div>
-            <div class="tiny muted" id="launchCopy">—</div>
+            <div class="tiny muted" id="launchCopy" style="margin-top:8px">—</div>
             <div class="row" style="margin-top:12px;justify-content:flex-end">
               <button class="btn btn-good" id="launchPilot">Launch</button>
             </div>
-          </div>
-
-          <div class="card" style="background:rgba(15,22,32,.55)">
-            <h2>What to demo (60 seconds)</h2>
-            <div class="tiny muted">A clean narrative for an investor/partner demo.</div>
-            <div class="hr"></div>
-            <ol class="tiny muted" style="line-height:1.6;margin:0;padding-left:18px">
-              <li>Upload a CSV — Stride auto-detects segments.</li>
-              <li>Open an account → Consumer portal appears.</li>
-              <li>Click <strong>Generate offers (A/B/C)</strong> and apply one.</li>
-              <li>Accept plan / settlement and watch dashboard KPIs + chart update.</li>
-              <li>Show Compliance audit log capturing everything.</li>
-            </ol>
           </div>
         </div>
       </div>
@@ -1011,7 +1297,14 @@
     },
 
     // recoveries chart
-    recoveryTimeline: [] // {t: epochMs, centsDelta}
+    recoveryTimeline: [], // {t: epochMs, centsDelta}
+
+    // filters
+    dashCreditorFilter: null,   // null = all creditors
+    pnlCreditorFilter: null,    // null = all creditors (aggregate)
+    pnlSegmentFilter: null,     // null = all segments
+    simulated: false,            // tracks whether simulation has run
+    scenario: "average",         // "pessimistic" | "average" | "optimistic"
   };
 
   const money = (cents) => (cents/100).toLocaleString(undefined,{style:"currency",currency:"USD"});
@@ -1072,6 +1365,52 @@
     }
   };
 
+  // -------------------- EasyStreet P&L Constants --------------------
+  const EASYSTREET_FEES = {
+    saasMonthly: 500,           // $500/mo per creditor
+    commissionRate: 0.15,       // 15% of recovered amounts
+    industryAvgRate: 0.35,      // Industry charges ~35%
+    planDefaultRate: 0.30,      // 30% of plans default (never fully paid)
+  };
+
+  // -------------------- Scenario Presets --------------------
+  const SCENARIOS = {
+    pessimistic: {
+      label: "Pessimistic",
+      weights: {
+        lt60:   { settlement: 25, plan_active: 25, plan_default: 15, no_response: 25, declined: 10 },
+        gte60:  { settlement: 18, plan_active: 20, plan_default: 20, no_response: 32, declined: 10 },
+        gte90:  { settlement: 12, plan_active: 16, plan_default: 22, no_response: 38, declined: 12 },
+        gte120: { settlement: 6,  plan_active: 10, plan_default: 26, no_response: 46, declined: 12 },
+      },
+      planActiveCompletion: 0.50,
+      planDefaultCompletion: 0.10,
+    },
+    average: {
+      label: "Average",
+      weights: {
+        lt60:   { settlement: 35, plan_active: 35, plan_default: 10, no_response: 15, declined: 5 },
+        gte60:  { settlement: 25, plan_active: 30, plan_default: 15, no_response: 22, declined: 8 },
+        gte90:  { settlement: 18, plan_active: 25, plan_default: 18, no_response: 30, declined: 9 },
+        gte120: { settlement: 10, plan_active: 18, plan_default: 22, no_response: 40, declined: 10 },
+      },
+      planActiveCompletion: 0.65,
+      planDefaultCompletion: 0.15,
+    },
+    optimistic: {
+      label: "Optimistic",
+      weights: {
+        lt60:   { settlement: 42, plan_active: 38, plan_default: 6,  no_response: 10, declined: 4 },
+        gte60:  { settlement: 32, plan_active: 35, plan_default: 10, no_response: 16, declined: 7 },
+        gte90:  { settlement: 25, plan_active: 30, plan_default: 13, no_response: 24, declined: 8 },
+        gte120: { settlement: 16, plan_active: 24, plan_default: 17, no_response: 34, declined: 9 },
+      },
+      planActiveCompletion: 0.78,
+      planDefaultCompletion: 0.20,
+    },
+  };
+  function activeScenario(){ return SCENARIOS[state.scenario] || SCENARIOS.average; }
+
   function activeStrategy(account){
     const seg = account ? account.segment : (selectedAccount()?.segment || "medical");
     return STRATEGIES[seg] || STRATEGIES.medical;
@@ -1103,11 +1442,108 @@
     document.getElementById("tab-dash").classList.toggle("hidden", name !== "dash");
     document.getElementById("tab-consumer").classList.toggle("hidden", name !== "consumer");
     document.getElementById("tab-compliance").classList.toggle("hidden", name !== "compliance");
+    document.getElementById("tab-pnl").classList.toggle("hidden", name !== "pnl");
     // Consumer full-screen mode
     document.body.classList.toggle("consumer-mode", name === "consumer");
+    // Render P&L when switching to it
+    if (name === "pnl") renderPnL();
   }
   document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
   document.getElementById("exitConsumerMode").addEventListener("click", () => setTab("dash"));
+
+  // P&L pricing slider live update
+  document.getElementById("pnlRateSlider").addEventListener("input", updatePricingSlider);
+
+  // Commission rate input — updates EASYSTREET_FEES and re-renders P&L
+  document.getElementById("commissionInput").addEventListener("input", function(){
+    const v = parseFloat(this.value);
+    if (!isNaN(v) && v >= 1 && v <= 50){
+      EASYSTREET_FEES.commissionRate = v / 100;
+      renderPnL();
+    }
+  });
+
+  // Scenario toggle — updates state, clears simulation if needed, re-renders
+  document.querySelectorAll(".scenario-btn").forEach(btn => {
+    btn.addEventListener("click", function(){
+      const scenario = this.dataset.scenario;
+      if (scenario === state.scenario) return;
+      state.scenario = scenario;
+      document.querySelectorAll(".scenario-btn").forEach(b =>
+        b.classList.toggle("active", b.dataset.scenario === scenario)
+      );
+      // Clear simulation if it already ran (data was generated with old weights)
+      if (state.simulated){
+        state.simulated = false;
+        state.recoveredCents = 0;
+        state.recoveryTimeline = [];
+        state.accounts.forEach(a => { a.status = "Pending"; a.recoveredCents = 0; });
+        syncPilotBadge();
+      }
+      renderAll();
+      logEvent("Scenario changed", `Set to: ${SCENARIOS[scenario].label}`);
+    });
+  });
+
+  // -------------------- Filter dropdowns --------------------
+  function populateFilterDropdowns(){
+    const creditors = [...new Set(state.accounts.map(a => a.creditor).filter(Boolean))].sort();
+    const segments = [...new Set(state.accounts.map(a => a.segment).filter(Boolean))].sort();
+
+    // Dashboard creditor dropdown
+    const dashSel = document.getElementById("dashCreditorSelect");
+    const prevDash = dashSel.value;
+    dashSel.innerHTML = '<option value="">All Creditors</option>';
+    creditors.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      dashSel.appendChild(opt);
+    });
+    if (creditors.includes(prevDash)) dashSel.value = prevDash;
+    else { dashSel.value = ""; state.dashCreditorFilter = null; }
+
+    // P&L creditor dropdown
+    const pnlCredSel = document.getElementById("pnlCreditorSelect");
+    const prevPnlCred = pnlCredSel.value;
+    pnlCredSel.innerHTML = '<option value="">All (Aggregate)</option>';
+    creditors.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      pnlCredSel.appendChild(opt);
+    });
+    if (creditors.includes(prevPnlCred)) pnlCredSel.value = prevPnlCred;
+    else { pnlCredSel.value = ""; state.pnlCreditorFilter = null; }
+
+    // P&L segment dropdown
+    const pnlSegSel = document.getElementById("pnlSegmentSelect");
+    const prevPnlSeg = pnlSegSel.value;
+    pnlSegSel.innerHTML = '<option value="">All Segments</option>';
+    segments.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s; opt.textContent = segLabel(s);
+      pnlSegSel.appendChild(opt);
+    });
+    if (segments.includes(prevPnlSeg)) pnlSegSel.value = prevPnlSeg;
+    else { pnlSegSel.value = ""; state.pnlSegmentFilter = null; }
+  }
+
+  // Dashboard creditor filter change
+  document.getElementById("dashCreditorSelect").addEventListener("change", (e) => {
+    state.dashCreditorFilter = e.target.value || null;
+    renderAll();
+  });
+
+  // P&L creditor filter change
+  document.getElementById("pnlCreditorSelect").addEventListener("change", (e) => {
+    state.pnlCreditorFilter = e.target.value || null;
+    renderPnL();
+  });
+
+  // P&L segment filter change
+  document.getElementById("pnlSegmentSelect").addEventListener("change", (e) => {
+    state.pnlSegmentFilter = e.target.value || null;
+    renderPnL();
+  });
 
   // -------------------- CSV parsing --------------------
   function splitCsvLine(line){
@@ -1154,7 +1590,11 @@
 
     logEvent("Accounts loaded", `${accts.length} accounts`);
     state.pilot.launched = false;
+    state.dashCreditorFilter = null;
+    state.pnlCreditorFilter = null;
+    state.pnlSegmentFilter = null;
     syncPilotBadge();
+    populateFilterDropdowns();
     renderAll();
     renderWizardPreview();
     renderWizDetectedSegments();
@@ -1162,11 +1602,106 @@
 
   // -------------------- Sample data --------------------
   const SAMPLE = `account_id,full_name,phone,email,balance,days_late,creditor,segment
-ACCT-1001,Jordan Lee,555-111-2233,jordan@example.com,688,74,Fintech Lender A,fintech
-ACCT-1002,Maya Patel,555-222-3344,maya@example.com,1240,112,Property Manager Group,property
-ACCT-1003,Chris Nguyen,555-333-4455,chris@example.com,310,46,Medical Billing Co,medical
-ACCT-1004,Sofia Ramirez,555-444-5566,sofia@example.com,980,89,Regional Utility,telecom
-ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,telecom
+ACCT-1001,Jordan Lee,555-101-0001,jordan.lee@example.com,688,74,QuickLend Finance,fintech
+ACCT-1002,Maya Patel,555-101-0002,maya.patel@example.com,1240,112,QuickLend Finance,fintech
+ACCT-1003,Chris Nguyen,555-101-0003,chris.nguyen@example.com,920,45,QuickLend Finance,fintech
+ACCT-1004,Sofia Ramirez,555-101-0004,sofia.ramirez@example.com,1580,88,QuickLend Finance,fintech
+ACCT-1005,Alex Chen,555-101-0005,alex.chen@example.com,430,33,QuickLend Finance,fintech
+ACCT-1006,Priya Sharma,555-101-0006,priya.sharma@example.com,2100,135,QuickLend Finance,fintech
+ACCT-1007,Marcus Johnson,555-101-0007,marcus.johnson@example.com,775,62,QuickLend Finance,fintech
+ACCT-1008,Emily Torres,555-101-0008,emily.torres@example.com,1350,97,QuickLend Finance,fintech
+ACCT-1009,David Kim,555-101-0009,david.kim@example.com,560,28,QuickLend Finance,fintech
+ACCT-1010,Rachel Green,555-101-0010,rachel.green@example.com,1890,155,QuickLend Finance,fintech
+ACCT-1011,Liam Foster,555-102-0001,liam.foster@example.com,950,68,NeoBank Digital,fintech
+ACCT-1012,Ava Mitchell,555-102-0002,ava.mitchell@example.com,1720,120,NeoBank Digital,fintech
+ACCT-1013,Noah Bennett,555-102-0003,noah.bennett@example.com,380,25,NeoBank Digital,fintech
+ACCT-1014,Olivia Hayes,555-102-0004,olivia.hayes@example.com,2450,142,NeoBank Digital,fintech
+ACCT-1015,Ethan Brooks,555-102-0005,ethan.brooks@example.com,1100,91,NeoBank Digital,fintech
+ACCT-1016,Isabella Ross,555-102-0006,isabella.ross@example.com,640,52,NeoBank Digital,fintech
+ACCT-1017,Mason Price,555-102-0007,mason.price@example.com,1830,108,NeoBank Digital,fintech
+ACCT-1018,Sophia Ward,555-102-0008,sophia.ward@example.com,470,38,NeoBank Digital,fintech
+ACCT-1019,James Cooper,555-102-0009,james.cooper@example.com,3200,165,NeoBank Digital,fintech
+ACCT-1020,Charlotte Reed,555-102-0010,charlotte.reed@example.com,890,77,NeoBank Digital,fintech
+ACCT-1021,Benjamin Gray,555-103-0001,benjamin.gray@example.com,1450,85,PayRight Solutions,fintech
+ACCT-1022,Amelia Scott,555-103-0002,amelia.scott@example.com,680,42,PayRight Solutions,fintech
+ACCT-1023,Lucas Turner,555-103-0003,lucas.turner@example.com,2200,130,PayRight Solutions,fintech
+ACCT-1024,Mia Phillips,555-103-0004,mia.phillips@example.com,510,55,PayRight Solutions,fintech
+ACCT-1025,Henry Morgan,555-103-0005,henry.morgan@example.com,1680,99,PayRight Solutions,fintech
+ACCT-1026,Ella Stewart,555-103-0006,ella.stewart@example.com,940,71,PayRight Solutions,fintech
+ACCT-1027,Alexander Hall,555-103-0007,alexander.hall@example.com,3100,170,PayRight Solutions,fintech
+ACCT-1028,Luna Adams,555-103-0008,luna.adams@example.com,760,60,PayRight Solutions,fintech
+ACCT-1029,Daniel Wright,555-103-0009,daniel.wright@example.com,1350,105,PayRight Solutions,fintech
+ACCT-1030,Chloe Campbell,555-103-0010,chloe.campbell@example.com,420,30,PayRight Solutions,fintech
+ACCT-1031,William Parker,555-104-0001,william.parker@example.com,1580,95,Greenfield Apartments,property
+ACCT-1032,Harper Evans,555-104-0002,harper.evans@example.com,2400,140,Greenfield Apartments,property
+ACCT-1033,Jackson Edwards,555-104-0003,jackson.edwards@example.com,870,58,Greenfield Apartments,property
+ACCT-1034,Aria Collins,555-104-0004,aria.collins@example.com,3200,160,Greenfield Apartments,property
+ACCT-1035,Sebastian Morris,555-104-0005,sebastian.morris@example.com,1200,82,Greenfield Apartments,property
+ACCT-1036,Scarlett Murphy,555-104-0006,scarlett.murphy@example.com,680,45,Greenfield Apartments,property
+ACCT-1037,Owen Rogers,555-104-0007,owen.rogers@example.com,1950,115,Greenfield Apartments,property
+ACCT-1038,Penelope Cook,555-104-0008,penelope.cook@example.com,2800,148,Greenfield Apartments,property
+ACCT-1039,Jack Bailey,555-104-0009,jack.bailey@example.com,550,35,Greenfield Apartments,property
+ACCT-1040,Layla Rivera,555-104-0010,layla.rivera@example.com,1100,72,Greenfield Apartments,property
+ACCT-1041,Aiden Howard,555-105-0001,aiden.howard@example.com,1750,98,Lakeside Rentals,property
+ACCT-1042,Riley Ward,555-105-0002,riley.ward@example.com,920,65,Lakeside Rentals,property
+ACCT-1043,Matthew Torres,555-105-0003,matthew.torres@example.com,2650,145,Lakeside Rentals,property
+ACCT-1044,Zoey Peterson,555-105-0004,zoey.peterson@example.com,480,32,Lakeside Rentals,property
+ACCT-1045,Samuel Gray,555-105-0005,samuel.gray@example.com,1380,88,Lakeside Rentals,property
+ACCT-1046,Nora Jenkins,555-105-0006,nora.jenkins@example.com,3400,175,Lakeside Rentals,property
+ACCT-1047,Ryan Powell,555-105-0007,ryan.powell@example.com,1050,75,Lakeside Rentals,property
+ACCT-1048,Lily Russell,555-105-0008,lily.russell@example.com,2100,128,Lakeside Rentals,property
+ACCT-1049,Nathan Griffin,555-105-0009,nathan.griffin@example.com,640,48,Lakeside Rentals,property
+ACCT-1050,Hannah Diaz,555-105-0010,hannah.diaz@example.com,1560,105,Lakeside Rentals,property
+ACCT-1051,Caleb Flores,555-106-0001,caleb.flores@example.com,475,32,City Medical Center,medical
+ACCT-1052,Grace Sanders,555-106-0002,grace.sanders@example.com,1200,78,City Medical Center,medical
+ACCT-1053,Dylan Simmons,555-106-0003,dylan.simmons@example.com,310,22,City Medical Center,medical
+ACCT-1054,Victoria Foster,555-106-0004,victoria.foster@example.com,890,95,City Medical Center,medical
+ACCT-1055,Luke Gonzales,555-106-0005,luke.gonzales@example.com,2100,140,City Medical Center,medical
+ACCT-1056,Zoe Bryant,555-106-0006,zoe.bryant@example.com,650,55,City Medical Center,medical
+ACCT-1057,Isaac Alexander,555-106-0007,isaac.alexander@example.com,1480,102,City Medical Center,medical
+ACCT-1058,Stella Russell,555-106-0008,stella.russell@example.com,380,18,City Medical Center,medical
+ACCT-1059,Gabriel Hayes,555-106-0009,gabriel.hayes@example.com,1750,125,City Medical Center,medical
+ACCT-1060,Aurora Griffin,555-106-0010,aurora.griffin@example.com,560,42,City Medical Center,medical
+ACCT-1061,Leo Martinez,555-107-0001,leo.martinez@example.com,390,55,Sunrise Health Group,medical
+ACCT-1062,Hazel Rivera,555-107-0002,hazel.rivera@example.com,820,68,Sunrise Health Group,medical
+ACCT-1063,Adam Cox,555-107-0003,adam.cox@example.com,1650,118,Sunrise Health Group,medical
+ACCT-1064,Violet Howard,555-107-0004,violet.howard@example.com,280,20,Sunrise Health Group,medical
+ACCT-1065,Julian Ward,555-107-0005,julian.ward@example.com,1100,92,Sunrise Health Group,medical
+ACCT-1066,Ellie Long,555-107-0006,ellie.long@example.com,540,44,Sunrise Health Group,medical
+ACCT-1067,Wyatt Foster,555-107-0007,wyatt.foster@example.com,1980,135,Sunrise Health Group,medical
+ACCT-1068,Audrey Patterson,555-107-0008,audrey.patterson@example.com,720,60,Sunrise Health Group,medical
+ACCT-1069,Nathan Hughes,555-107-0009,nathan.hughes@example.com,440,35,Sunrise Health Group,medical
+ACCT-1070,Bella Price,555-107-0010,bella.price@example.com,1350,105,Sunrise Health Group,medical
+ACCT-1071,Eli Sanders,555-108-0001,eli.sanders@example.com,580,48,Regional Medical Associates,medical
+ACCT-1072,Claire Wood,555-108-0002,claire.wood@example.com,1900,130,Regional Medical Associates,medical
+ACCT-1073,Ian Barnes,555-108-0003,ian.barnes@example.com,340,25,Regional Medical Associates,medical
+ACCT-1074,Natalie Ross,555-108-0004,natalie.ross@example.com,1250,88,Regional Medical Associates,medical
+ACCT-1075,Jaxon Fisher,555-108-0005,jaxon.fisher@example.com,2300,155,Regional Medical Associates,medical
+ACCT-1076,Savannah Henderson,555-108-0006,savannah.henderson@example.com,710,62,Regional Medical Associates,medical
+ACCT-1077,Levi Coleman,555-108-0007,levi.coleman@example.com,960,75,Regional Medical Associates,medical
+ACCT-1078,Paisley Jenkins,555-108-0008,paisley.jenkins@example.com,1600,110,Regional Medical Associates,medical
+ACCT-1079,Ezra Butler,555-108-0009,ezra.butler@example.com,430,30,Regional Medical Associates,medical
+ACCT-1080,Maya Reed,555-108-0010,maya.reed@example.com,850,70,Regional Medical Associates,medical
+ACCT-1081,Connor Kelly,555-109-0001,connor.kelly@example.com,2050,140,Metro Wireless,telecom
+ACCT-1082,Peyton Sullivan,555-109-0002,peyton.sullivan@example.com,980,89,Metro Wireless,telecom
+ACCT-1083,Asher Murphy,555-109-0003,asher.murphy@example.com,1550,108,Metro Wireless,telecom
+ACCT-1084,Piper Cooper,555-109-0004,piper.cooper@example.com,420,28,Metro Wireless,telecom
+ACCT-1085,Lincoln Bailey,555-109-0005,lincoln.bailey@example.com,3100,168,Metro Wireless,telecom
+ACCT-1086,Ruby Richardson,555-109-0006,ruby.richardson@example.com,750,58,Metro Wireless,telecom
+ACCT-1087,Miles Cox,555-109-0007,miles.cox@example.com,1800,120,Metro Wireless,telecom
+ACCT-1088,Ivy Howard,555-109-0008,ivy.howard@example.com,1200,82,Metro Wireless,telecom
+ACCT-1089,Chase Watson,555-109-0009,chase.watson@example.com,580,40,Metro Wireless,telecom
+ACCT-1090,Eliana Brooks,555-109-0010,eliana.brooks@example.com,2400,150,Metro Wireless,telecom
+ACCT-1091,Dominic Morgan,555-110-0001,dominic.morgan@example.com,1350,95,TelcoConnect,telecom
+ACCT-1092,Willow Bell,555-110-0002,willow.bell@example.com,680,52,TelcoConnect,telecom
+ACCT-1093,Austin Coleman,555-110-0003,austin.coleman@example.com,2800,158,TelcoConnect,telecom
+ACCT-1094,Emery Torres,555-110-0004,emery.torres@example.com,490,35,TelcoConnect,telecom
+ACCT-1095,Grayson Price,555-110-0005,grayson.price@example.com,1680,110,TelcoConnect,telecom
+ACCT-1096,Kinsley Adams,555-110-0006,kinsley.adams@example.com,920,72,TelcoConnect,telecom
+ACCT-1097,Carson Hughes,555-110-0007,carson.hughes@example.com,3500,180,TelcoConnect,telecom
+ACCT-1098,Sadie Russell,555-110-0008,sadie.russell@example.com,1100,85,TelcoConnect,telecom
+ACCT-1099,Axel Stewart,555-110-0009,axel.stewart@example.com,560,42,TelcoConnect,telecom
+ACCT-1100,Madeline Gray,555-110-0010,madeline.gray@example.com,1950,128,TelcoConnect,telecom
 `;
 
   // -------------------- Wizard --------------------
@@ -1175,6 +1710,10 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
   let wizStep = 1;
 
   function openWizard(){
+    if (state.accounts.length === 0){
+      alert("Upload contacts first to configure the engine.");
+      return;
+    }
     overlay.classList.remove("hidden");
     wizStep = 1;
     renderWizard();
@@ -1187,30 +1726,25 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
   overlay.addEventListener("click", (e)=>{ if (e.target === overlay) closeWizard(); });
 
   function setWizStep(n){
-    wizStep = Math.min(3, Math.max(1, n));
+    wizStep = Math.min(2, Math.max(1, n));
     renderWizard();
   }
 
   document.getElementById("wizBack").addEventListener("click", ()=> setWizStep(wizStep - 1));
   document.getElementById("wizNext").addEventListener("click", ()=>{
-    if (wizStep === 1 && state.accounts.length === 0){
-      alert("Load accounts first (sample or CSV) to continue.");
-      return;
-    }
     setWizStep(wizStep + 1);
   });
 
   function renderWizard(){
     steps.forEach(s => s.classList.toggle("active", Number(s.dataset.step) === wizStep));
-    document.getElementById("wizStep1").classList.toggle("hidden", wizStep !== 1);
-    document.getElementById("wizStep2").classList.toggle("hidden", wizStep !== 2);
-    document.getElementById("wizStep3").classList.toggle("hidden", wizStep !== 3);
+    document.getElementById("wizStep2").classList.toggle("hidden", wizStep !== 1);
+    document.getElementById("wizStep3").classList.toggle("hidden", wizStep !== 2);
 
     document.getElementById("wizBack").classList.toggle("hidden", wizStep === 1);
-    document.getElementById("wizNext").classList.toggle("hidden", wizStep === 3);
+    document.getElementById("wizNext").classList.toggle("hidden", wizStep === 2);
 
-    if (wizStep === 2){ renderWizDetectedSegments(); renderWizStrategySummary(); }
-    if (wizStep === 3) renderWizLaunchSummary();
+    if (wizStep === 1){ renderWizDetectedSegments(); renderWizStrategySummary(); }
+    if (wizStep === 2){ renderWizLaunchSummary(); renderWizLaunchParams(); }
   }
 
   function renderWizardPreview(){
@@ -1336,6 +1870,78 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
       `Launch will set cadence to ${state.pilot.cadenceMaxPerDay}/day and enable per-segment strategy routing across ${segs.length} segment${segs.length!==1?"s":""}.`;
   }
 
+  function renderWizLaunchParams(){
+    const segs = [...new Set(state.accounts.map(a => a.segment).filter(Boolean))];
+
+    // Settlement thresholds
+    const thEl = document.getElementById("wizThresholds");
+    if (!segs.length){
+      thEl.innerHTML = '<div class="tiny muted">Load accounts to see thresholds.</div>';
+    } else {
+      const iStyle = 'width:48px;padding:5px 4px;font-size:12px;text-align:center;border-radius:8px';
+      let html = `<table style="font-size:12px;width:100%">
+        <thead><tr>
+          <th style="font-size:11px;padding:6px 4px">Segment</th>
+          <th style="font-size:11px;padding:6px 4px;text-align:center">&lt;60d</th>
+          <th style="font-size:11px;padding:6px 4px;text-align:center">60–89d</th>
+          <th style="font-size:11px;padding:6px 4px;text-align:center">90–119d</th>
+          <th style="font-size:11px;padding:6px 4px;text-align:center">120d+</th>
+        </tr></thead><tbody>`;
+      segs.forEach(seg => {
+        const strat = STRATEGIES[seg];
+        if (!strat) return;
+        const th = strat.settleThresholds;
+        html += `<tr>
+          <td style="padding:5px 4px"><span class="seg-badge" data-seg="${escapeHtml(seg)}" style="font-size:11px;padding:3px 8px"><span class="seg-dot"></span>${escapeHtml(strat.label)}</span></td>
+          <td style="padding:5px 2px;text-align:center"><input type="number" class="thresh-input" data-seg="${seg}" data-range="lt60" value="${th.lt60}" min="40" max="95" style="${iStyle}" />%</td>
+          <td style="padding:5px 2px;text-align:center"><input type="number" class="thresh-input" data-seg="${seg}" data-range="gte60" value="${th.gte60}" min="40" max="95" style="${iStyle}" />%</td>
+          <td style="padding:5px 2px;text-align:center"><input type="number" class="thresh-input" data-seg="${seg}" data-range="gte90" value="${th.gte90}" min="40" max="95" style="${iStyle}" />%</td>
+          <td style="padding:5px 2px;text-align:center"><input type="number" class="thresh-input" data-seg="${seg}" data-range="gte120" value="${th.gte120}" min="40" max="95" style="${iStyle}" />%</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      thEl.innerHTML = html;
+
+      thEl.querySelectorAll('.thresh-input').forEach(input => {
+        input.addEventListener('change', () => {
+          const val = Math.min(95, Math.max(40, Number(input.value) || 0));
+          input.value = val;
+          if (STRATEGIES[input.dataset.seg]) STRATEGIES[input.dataset.seg].settleThresholds[input.dataset.range] = val;
+        });
+      });
+    }
+
+    // Plan factors
+    const pfEl = document.getElementById("wizPlanFactors");
+    if (!segs.length){
+      pfEl.innerHTML = '<div class="tiny muted">Load accounts to see plan factors.</div>';
+    } else {
+      let html = '<div class="grid" style="gap:10px">';
+      segs.forEach(seg => {
+        const strat = STRATEGIES[seg];
+        if (!strat) return;
+        const pct = ((strat.planFactorBase - 1) * 100).toFixed(1);
+        html += `<div class="row" style="justify-content:space-between;align-items:center">
+          <span class="seg-badge" data-seg="${escapeHtml(seg)}" style="font-size:11px;padding:3px 8px"><span class="seg-dot"></span>${escapeHtml(strat.label)}</span>
+          <div class="row" style="gap:6px;align-items:center">
+            <input type="number" class="factor-input" data-seg="${seg}" value="${pct}" min="0.5" max="10" step="0.1" style="width:58px;padding:5px 4px;font-size:12px;text-align:center;border-radius:8px" />
+            <span class="tiny muted">% + late-fee adj</span>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+      pfEl.innerHTML = html;
+
+      pfEl.querySelectorAll('.factor-input').forEach(input => {
+        input.addEventListener('change', () => {
+          const val = Math.min(10, Math.max(0.5, Number(input.value) || 0));
+          input.value = val.toFixed(1);
+          if (STRATEGIES[input.dataset.seg]) STRATEGIES[input.dataset.seg].planFactorBase = 1 + (val / 100);
+        });
+      });
+    }
+  }
+
   document.getElementById("launchPilot").addEventListener("click", ()=>{
     if (!state.accounts.length) return alert("Load accounts first.");
     state.pilot.launched = true;
@@ -1352,12 +1958,20 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
   function syncPilotBadge(){
     const dot = document.getElementById("pilotDot");
     const label = document.getElementById("pilotLabel");
+    const simBtn = document.getElementById("simulateRecovery");
     if (state.pilot.launched){
       dot.className = "dot good";
-      label.innerHTML = `Engine: <strong>Active</strong> • ${detectedSegmentsSummary()}`;
+      label.innerHTML = `Engine: <strong>Active</strong>`;
     } else {
       dot.className = "dot warn";
       label.innerHTML = `Engine: <strong>Not launched</strong>`;
+    }
+    // Enable simulate button only when engine launched + accounts loaded + not yet simulated
+    simBtn.disabled = !state.pilot.launched || !state.accounts.length || state.simulated;
+    if (state.simulated){
+      simBtn.textContent = "✓ Simulated";
+    } else {
+      simBtn.textContent = "▶ Simulate Recovery";
     }
   }
 
@@ -1368,29 +1982,50 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     return `<span class="dot good"></span>`;
   }
 
+  // -------------------- Dashboard filter helpers --------------------
+  function filteredDashAccounts(){
+    if (!state.dashCreditorFilter) return state.accounts;
+    return state.accounts.filter(a => a.creditor === state.dashCreditorFilter);
+  }
+
+  function updateDashFilterCount(){
+    const fa = filteredDashAccounts();
+    const el = document.getElementById("dashFilterCount");
+    if (el) el.textContent = `Showing ${fa.length} of ${state.accounts.length} accounts`;
+  }
+
   function renderKPIs(){
-    const count = state.accounts.length;
-    const totalCents = toCents(state.accounts.reduce((s,a)=> s + (Number(a.balance)||0), 0));
+    const accts = filteredDashAccounts();
+    const count = accts.length;
+    const totalCents = toCents(accts.reduce((s,a)=> s + (Number(a.balance)||0), 0));
+    // Sum recovered cents for filtered accounts (falls back to global if no per-account tracking)
+    const filteredRecovered = accts.reduce((s,a) => s + (a.recoveredCents || 0), 0);
+    const displayRecovered = state.dashCreditorFilter ? filteredRecovered : state.recoveredCents;
+
     document.getElementById("kpiAccounts").textContent = String(count);
     document.getElementById("kpiBalance").textContent = money(totalCents);
-    document.getElementById("kpiRecovered").textContent = money(state.recoveredCents);
+    document.getElementById("kpiRecovered").textContent = money(displayRecovered);
 
-    const avgDays = count ? Math.round(state.accounts.reduce((s,a)=> s + (Number(a.days_late)||0), 0) / count) : 0;
+    const avgDays = count ? Math.round(accts.reduce((s,a)=> s + (Number(a.days_late)||0), 0) / count) : 0;
     document.getElementById("snapAvgDays").textContent = count ? `Avg days late: ${avgDays}` : "Avg days late: —";
 
-    document.getElementById("snapStrategy").textContent = state.pilot.launched ? `Segments: ${detectedSegmentsSummary()}` : "Segments: —";
+    const segs = [...new Set(accts.map(a => a.segment).filter(Boolean))];
+    document.getElementById("snapStrategy").textContent = state.pilot.launched ? `Segments: ${segs.map(s => segLabel(s)).join(", ") || "—"}` : "Segments: —";
 
-    const recoveryPct = totalCents ? Math.round((state.recoveredCents / totalCents) * 1000) / 10 : 0;
+    const recoveryPct = totalCents ? Math.round((displayRecovered / totalCents) * 1000) / 10 : 0;
     document.getElementById("snapRecovery").textContent = count ? `Recovery: ${recoveryPct}%` : "Recovery: —";
+
+    updateDashFilterCount();
   }
 
   function renderSegmentStrip(){
+    const accts = filteredDashAccounts();
     const counts = { fintech:0, property:0, medical:0, telecom:0 };
-    state.accounts.forEach(a => {
+    accts.forEach(a => {
       const s = (a.segment || "").toLowerCase();
       if (s in counts) counts[s]++;
     });
-    const hasAccounts = state.accounts.length > 0;
+    const hasAccounts = accts.length > 0;
     Object.keys(counts).forEach(seg => {
       const card = document.querySelector(`.seg-card[data-seg="${seg}"]`);
       if (!card) return;
@@ -1408,13 +2043,14 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
   }
 
   function renderAccounts(){
+    const accts = filteredDashAccounts();
     const tbody = document.getElementById("acctRows");
     tbody.innerHTML = "";
-    if (!state.accounts.length){
+    if (!accts.length){
       tbody.innerHTML = `<tr><td colspan="7" class="muted">No accounts loaded yet.</td></tr>`;
       return;
     }
-    state.accounts.forEach(a => {
+    accts.forEach(a => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><div class="mono">${escapeHtml(a.account_id)}</div><div class="muted tiny">${escapeHtml(a.full_name || "—")}</div></td>
@@ -1431,33 +2067,432 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
   }
 
   function renderRulesCard(){
-    const a = selectedAccount();
     const launched = state.pilot.launched;
+    const segs = [...new Set(filteredDashAccounts().map(x => x.segment).filter(Boolean))];
+    const area = document.getElementById("rulesThresholdsArea");
 
-    // Show detected segments summary or selected account's segment
-    const segs = [...new Set(state.accounts.map(x => x.segment).filter(Boolean))];
-    document.getElementById("ruleSegment").textContent = launched
-      ? (a ? activeStrategy(a).label : segs.map(s => segLabel(s)).join(", ") || "—")
-      : "—";
-    document.getElementById("ruleCadence").textContent = launched ? `max ${state.pilot.cadenceMaxPerDay}/day` : "—";
+    document.getElementById("ruleSegment").textContent = segs.length
+      ? `Segments: ${segs.map(s => segLabel(s)).join(", ")}`
+      : "Segments: —";
+    document.getElementById("ruleCadence").textContent = launched
+      ? `Cadence: max ${state.pilot.cadenceMaxPerDay}/day`
+      : "Cadence: —";
 
-    if (launched && a){
-      const strat = activeStrategy(a);
-      const th = strat.settleThresholds;
-      document.getElementById("ruleSettle").textContent =
-        `<60d ${th.lt60}% • 60–89d ${th.gte60}% • 90–119d ${th.gte90}% • 120d+ ${th.gte120}%`;
-      document.getElementById("rulePlanFactor").textContent =
-        `${((strat.planFactorBase - 1) * 100).toFixed(1)}% base + late-fee adjustment`;
-      document.getElementById("ruleScript").textContent = strat.script;
-    } else if (launched){
-      document.getElementById("ruleSettle").textContent = "Per-segment (select an account to view)";
-      document.getElementById("rulePlanFactor").textContent = "Per-segment (select an account to view)";
-      document.getElementById("ruleScript").textContent = "Select an account to see segment-specific scripts.";
-    } else {
-      document.getElementById("ruleSettle").textContent = "—";
-      document.getElementById("rulePlanFactor").textContent = "—";
-      document.getElementById("ruleScript").textContent = "Launch the engine to activate per-segment routing.";
+    if (!launched || !segs.length){
+      area.innerHTML = '<div class="tiny muted">Launch the engine to see per-segment rules.</div>';
+      return;
     }
+
+    const iStyle = 'font-size:12px;padding:5px 4px;text-align:center';
+    const thStyle = 'font-size:11px;padding:6px 4px;text-align:center;white-space:nowrap';
+    let html = `<div style="overflow:visible">
+      <table style="font-size:12px;width:100%">
+        <thead><tr>
+          <th style="font-size:11px;padding:6px 4px">Segment</th>
+          <th style="${thStyle}">&lt;60d <span class="info-tip" data-tip="Under 60 days past due. This is the minimum settlement we'll accept — since the debt is recent, we hold a higher threshold.">i</span></th>
+          <th style="${thStyle}">60–89d <span class="info-tip" data-tip="60 to 89 days past due. Acceptance threshold drops slightly — the longer the debt ages, the more flexible we become.">i</span></th>
+          <th style="${thStyle}">90–119d <span class="info-tip" data-tip="90 to 119 days past due. Threshold drops further to encourage resolution before the account ages past 120 days.">i</span></th>
+          <th style="${thStyle}">120d+ <span class="info-tip" data-tip="120+ days past due. The lowest settlement we'll accept. At this stage, recovering anything is the priority.">i</span></th>
+          <th style="${thStyle}">Plan factor <span class="info-tip" data-tip="A small % added to the balance when setting up a payment plan. Covers the cost of extending payments over time — like a convenience fee for paying in installments.">i</span></th>
+        </tr></thead><tbody>`;
+    segs.forEach(seg => {
+      const strat = STRATEGIES[seg];
+      if (!strat) return;
+      const th = strat.settleThresholds;
+      const pct = ((strat.planFactorBase - 1) * 100).toFixed(1);
+      html += `<tr>
+        <td style="padding:5px 4px"><span class="seg-badge" data-seg="${escapeHtml(seg)}" style="font-size:11px;padding:3px 8px"><span class="seg-dot"></span>${escapeHtml(strat.label)}</span></td>
+        <td style="${iStyle}">${th.lt60}%</td>
+        <td style="${iStyle}">${th.gte60}%</td>
+        <td style="${iStyle}">${th.gte90}%</td>
+        <td style="${iStyle}">${th.gte120}%</td>
+        <td style="${iStyle}">${pct}%</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+
+    area.innerHTML = html;
+  }
+
+  // -------------------- P&L Dashboard --------------------
+  function renderPnL(){
+    let accounts = state.accounts;
+    if (state.pnlCreditorFilter) accounts = accounts.filter(a => a.creditor === state.pnlCreditorFilter);
+    if (state.pnlSegmentFilter) accounts = accounts.filter(a => a.segment === state.pnlSegmentFilter);
+    const rate = EASYSTREET_FEES.commissionRate;
+    const defaultRate = EASYSTREET_FEES.planDefaultRate;
+
+    // Update filter count
+    const pnlCountEl = document.getElementById("pnlFilterCount");
+    if (pnlCountEl) pnlCountEl.textContent = `Showing ${accounts.length} of ${state.accounts.length} accounts`;
+
+    if (!accounts.length){
+      document.getElementById("pnlPortfolio").textContent = "$0";
+      document.getElementById("pnlSettleRev").textContent = "$0";
+      document.getElementById("pnlPlanRev").textContent = "$0";
+      document.getElementById("pnlSaasRev").textContent = "$0";
+      document.getElementById("pnlCreditorRows").innerHTML = '<tr><td colspan="8" class="muted tiny" style="padding:12px">Load accounts to see creditor analysis.</td></tr>';
+      document.getElementById("pnlSettleTotal").textContent = "$0";
+      document.getElementById("pnlSettleComm").textContent = "$0";
+      document.getElementById("pnlPlanTotal").textContent = "$0";
+      document.getElementById("pnlPlanAdjusted").textContent = "$0";
+      document.getElementById("pnlPlanComm").textContent = "$0";
+      document.getElementById("pnlSliderRev").textContent = "$0";
+      document.getElementById("pnlIndustryRev").textContent = "$0";
+      document.getElementById("pnlSavings").textContent = "$0";
+      document.getElementById("pnlSegStrip").innerHTML = '<div class="kpi" style="text-align:center"><div class="tiny muted">Load accounts to see segment profitability.</div></div>';
+      return;
+    }
+
+    // ---------- Outcome weights from active scenario ----------
+    const sc = activeScenario();
+    const OUTCOME_WEIGHTS = sc.weights;
+
+    function bucketWeights(daysLate){
+      if (daysLate >= 120) return OUTCOME_WEIGHTS.gte120;
+      if (daysLate >= 90)  return OUTCOME_WEIGHTS.gte90;
+      if (daysLate >= 60)  return OUTCOME_WEIGHTS.gte60;
+      return OUTCOME_WEIGHTS.lt60;
+    }
+
+    const PLAN_ACTIVE_COMPLETION = sc.planActiveCompletion;
+    const PLAN_DEFAULT_COMPLETION = sc.planDefaultCompletion;
+
+    // ---------- Per-account computations ----------
+    let totalBalance = 0;
+    let totalSettleValue = 0;
+    let totalPlanValue = 0;
+    // Weighted sums for computing blended assumptions
+    let wSettlement = 0, wPlanActive = 0, wPlanDefault = 0, wNoResponse = 0, wDeclined = 0;
+
+    const creditorMap = {};
+    const segmentMap = {};
+
+    accounts.forEach(a => {
+      const bal = Number(a.balance) || 0;
+      const days = Number(a.days_late) || 0;
+      totalBalance += bal;
+
+      const w = bucketWeights(days);
+      const wTotal = w.settlement + w.plan_active + w.plan_default + w.no_response + w.declined;
+      const pSettle = w.settlement / wTotal;
+      const pPlanActive = w.plan_active / wTotal;
+      const pPlanDefault = w.plan_default / wTotal;
+      const pNoResponse = w.no_response / wTotal;
+      const pDeclined = w.declined / wTotal;
+
+      // Accumulate weighted averages
+      wSettlement += pSettle;
+      wPlanActive += pPlanActive;
+      wPlanDefault += pPlanDefault;
+      wNoResponse += pNoResponse;
+      wDeclined += pDeclined;
+
+      // Settlement path value (if this account settles)
+      const sThreshold = settleThreshold(days, a) / 100;
+      const settleValue = bal * sThreshold;
+
+      // Plan path value (full plan total)
+      const pFactor = planFactor(days, a);
+      const planValueGross = bal * pFactor;
+
+      // Realistic blended recovery factoring in engagement rates:
+      // settlement: pSettle × settleValue
+      // plan_active: pPlanActive × planGross × activeCompletion
+      // plan_default: pPlanDefault × planGross × defaultCompletion
+      // no_response + declined: $0
+      const blendedRecovery =
+        (pSettle * settleValue) +
+        (pPlanActive * planValueGross * PLAN_ACTIVE_COMPLETION) +
+        (pPlanDefault * planValueGross * PLAN_DEFAULT_COMPLETION);
+
+      totalSettleValue += settleValue;
+      totalPlanValue += planValueGross;
+
+      // Creditor grouping
+      const cred = a.creditor || "Unknown";
+      if (!creditorMap[cred]) creditorMap[cred] = { count:0, totalBal:0, segs:new Set(), daysSum:0, settleValue:0, planValueGross:0, blended:0 };
+      creditorMap[cred].count++;
+      creditorMap[cred].totalBal += bal;
+      creditorMap[cred].segs.add(a.segment || "—");
+      creditorMap[cred].daysSum += days;
+      creditorMap[cred].settleValue += settleValue;
+      creditorMap[cred].planValueGross += planValueGross;
+      creditorMap[cred].blended += blendedRecovery;
+
+      // Segment grouping
+      const seg = a.segment || "unknown";
+      if (!segmentMap[seg]) segmentMap[seg] = { count:0, totalBal:0, settleValue:0, planValueGross:0, blended:0 };
+      segmentMap[seg].count++;
+      segmentMap[seg].totalBal += bal;
+      segmentMap[seg].settleValue += settleValue;
+      segmentMap[seg].planValueGross += planValueGross;
+      segmentMap[seg].blended += blendedRecovery;
+    });
+
+    const n = accounts.length || 1;
+    const uniqueCreditors = Object.keys(creditorMap).length;
+    const saasRevenue = uniqueCreditors * EASYSTREET_FEES.saasMonthly;
+
+    // Weighted-average rates across all accounts
+    const avgResponseRate = 1 - (wNoResponse / n);
+    const respondersWeight = wSettlement + wPlanActive + wPlanDefault + wDeclined;
+    const avgSettleRate = respondersWeight ? wSettlement / respondersWeight : 0;
+    const avgPlanRate = respondersWeight ? (wPlanActive + wPlanDefault) / respondersWeight : 0;
+    const avgDeclineRate = respondersWeight ? wDeclined / respondersWeight : 0;
+    const totalPlans = wPlanActive + wPlanDefault;
+    const avgPlanDefaultRate = totalPlans ? wPlanDefault / totalPlans : 0;
+
+    // Total blended recovery already accounts for engagement rates
+    const totalBlendedRecovery = Object.values(creditorMap).reduce((s,c) => s + c.blended, 0);
+
+    // Commission on settlement portion
+    const settlePortionRecovery = accounts.reduce((s,a) => {
+      const w = bucketWeights(Number(a.days_late)||0);
+      const pSettle = w.settlement / (w.settlement+w.plan_active+w.plan_default+w.no_response+w.declined);
+      return s + pSettle * settlementAmount(Number(a.balance)||0, settleThreshold(Number(a.days_late)||0, a));
+    }, 0);
+    const settleCommission = settlePortionRecovery * rate;
+
+    // Commission on plan portion
+    const planPortionRecovery = totalBlendedRecovery - settlePortionRecovery;
+    const planCommission = planPortionRecovery * rate;
+
+    // ---------- Section 0: Assumptions ----------
+    const pct1 = v => (v * 100).toFixed(1) + "%";
+    document.getElementById("pnlAssumeResponse").textContent = pct1(avgResponseRate);
+    document.getElementById("pnlAssumeSettle").textContent = pct1(avgSettleRate);
+    document.getElementById("pnlAssumePlan").textContent = pct1(avgPlanRate);
+    document.getElementById("pnlAssumeDecline").textContent = pct1(avgDeclineRate);
+    document.getElementById("pnlAssumePlanDefault").textContent = pct1(avgPlanDefaultRate);
+    document.getElementById("pnlAssumeDefaultMonths").textContent = (PLAN_DEFAULT_COMPLETION * 10).toFixed(1) + " payments avg";
+    document.getElementById("pnlAssumePlanComplete").textContent = Math.round(PLAN_ACTIVE_COMPLETION * 100) + "% of schedule";
+
+    // Simulated actuals (if simulation has run)
+    const simArea = document.getElementById("pnlSimActuals");
+    if (state.simulated){
+      const simAccts = accounts;
+      const simTotal = simAccts.length || 1;
+      const simSettled = simAccts.filter(a => a.status.startsWith("Settlement")).length;
+      const simPlanActive = simAccts.filter(a => a.status.startsWith("Plan active")).length;
+      const simPlanDefault = simAccts.filter(a => a.status.startsWith("Plan defaulted")).length;
+      const simNoResponse = simAccts.filter(a => a.status === "No response").length;
+      const simDeclined = simAccts.filter(a => a.status === "Declined").length;
+      const simResponders = simSettled + simPlanActive + simPlanDefault + simDeclined;
+      const simResponseRate = (simTotal - simNoResponse) / simTotal;
+      const simSettleOfResp = simResponders ? simSettled / simResponders : 0;
+      const simPlanOfResp = simResponders ? (simPlanActive + simPlanDefault) / simResponders : 0;
+      const simDeclineOfResp = simResponders ? simDeclined / simResponders : 0;
+      const simPlans = simPlanActive + simPlanDefault;
+      const simPlanDefRate = simPlans ? simPlanDefault / simPlans : 0;
+
+      // Avg payments for defaults
+      let defPaySum = 0, defCount = 0;
+      simAccts.filter(a => a.status.startsWith("Plan defaulted")).forEach(a => {
+        const m = a.status.match(/(\d+) of (\d+)/);
+        if (m){ defPaySum += parseInt(m[1]); defCount++; }
+      });
+      const avgDefPay = defCount ? (defPaySum / defCount).toFixed(1) : "—";
+
+      // Avg completion for active plans
+      let actPaySum = 0, actTotalSum = 0, actCount = 0;
+      simAccts.filter(a => a.status.startsWith("Plan active")).forEach(a => {
+        const m = a.status.match(/(\d+) of (\d+)/);
+        if (m){ actPaySum += parseInt(m[1]); actTotalSum += parseInt(m[2]); actCount++; }
+      });
+      const avgActComplete = actCount ? ((actPaySum / actTotalSum) * 100).toFixed(0) + "%" : "—";
+
+      const simRecoveredCents = simAccts.reduce((s,a) => s + (a.recoveredCents || 0), 0);
+      const simRecoveryRate = totalBalance ? simRecoveredCents / (totalBalance * 100) : 0;
+
+      simArea.innerHTML = `
+        <div class="row" style="justify-content:space-between">
+          <span class="tiny muted">Response rate</span>
+          <span class="mono" style="font-size:12px;color:var(--good)">${pct1(simResponseRate)}</span>
+        </div>
+        <div class="row" style="justify-content:space-between">
+          <span class="tiny muted">→ Settlement rate</span>
+          <span class="mono" style="font-size:12px;color:var(--good)">${pct1(simSettleOfResp)}</span>
+        </div>
+        <div class="row" style="justify-content:space-between">
+          <span class="tiny muted">→ Plan acceptance rate</span>
+          <span class="mono" style="font-size:12px;color:var(--good)">${pct1(simPlanOfResp)}</span>
+        </div>
+        <div class="row" style="justify-content:space-between">
+          <span class="tiny muted">→ Decline rate</span>
+          <span class="mono" style="font-size:12px;color:var(--good)">${pct1(simDeclineOfResp)}</span>
+        </div>
+        <div class="hr"></div>
+        <div class="row" style="justify-content:space-between">
+          <span class="tiny muted">Plan default rate</span>
+          <span class="mono" style="font-size:12px;color:var(--warn)">${pct1(simPlanDefRate)}</span>
+        </div>
+        <div class="row" style="justify-content:space-between">
+          <span class="tiny muted">Avg payments before default</span>
+          <span class="mono" style="font-size:12px;color:var(--warn)">${avgDefPay} payments</span>
+        </div>
+        <div class="row" style="justify-content:space-between">
+          <span class="tiny muted">Active plan avg completion</span>
+          <span class="mono" style="font-size:12px;color:var(--good)">${avgActComplete}</span>
+        </div>
+        <div class="hr"></div>
+        <div class="row" style="justify-content:space-between">
+          <span class="tiny" style="font-weight:600">Actual recovery rate</span>
+          <span class="mono" style="font-size:14px;font-weight:700;color:var(--accent)">${pct1(simRecoveryRate)}</span>
+        </div>
+        <div class="tiny muted" style="margin-top:4px">${simSettled} settled · ${simPlanActive} plans active · ${simPlanDefault} defaulted · ${simNoResponse} no response · ${simDeclined} declined</div>
+      `;
+    } else {
+      simArea.innerHTML = '<div class="tiny muted" id="pnlSimPlaceholder">Run simulation to see actual outcomes.</div>';
+    }
+
+    // ---------- Section A: KPIs ----------
+    const fmtK = v => v >= 1000 ? "$" + (v/1000).toFixed(1) + "k" : "$" + v.toFixed(0);
+    const fmt = v => "$" + v.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
+
+    document.getElementById("pnlPortfolio").textContent = fmt(totalBalance);
+    document.getElementById("pnlSettleRev").textContent = fmt(Math.round(settleCommission));
+    document.getElementById("pnlPlanRev").textContent = fmt(Math.round(planCommission));
+    document.getElementById("pnlSaasRev").textContent = fmt(saasRevenue);
+
+    // ---------- Section B: Creditor table ----------
+    const tbody = document.getElementById("pnlCreditorRows");
+    tbody.innerHTML = "";
+    const creditors = Object.entries(creditorMap).sort((a,b) => b[1].blended - a[1].blended);
+    creditors.forEach(([name, c]) => {
+      const avgDays = Math.round(c.daysSum / c.count);
+      const esRevenue = c.blended * rate + (EASYSTREET_FEES.saasMonthly / uniqueCreditors * c.count / accounts.length);
+      const revenuePerAcct = esRevenue / c.count;
+
+      // Recovery % of total balance
+      const recoveryPct = c.totalBal ? ((c.blended / c.totalBal) * 100).toFixed(1) : "0.0";
+      // EasyStreet revenue as % of total balance and % of expected recovery
+      const revOfBal = c.totalBal ? ((esRevenue / c.totalBal) * 100).toFixed(1) : "0.0";
+      const revOfRecovery = c.blended ? ((esRevenue / c.blended) * 100).toFixed(1) : "0.0";
+
+      let roi, roiColor;
+      if (revenuePerAcct > 150) { roi = "High"; roiColor = "var(--good)"; }
+      else if (revenuePerAcct > 75) { roi = "Medium"; roiColor = "var(--warn)"; }
+      else { roi = "Low"; roiColor = "var(--bad)"; }
+
+      const segBadges = [...c.segs].map(s => `<span class="seg-badge" data-seg="${escapeHtml(s)}" style="font-size:10px;padding:2px 6px"><span class="seg-dot"></span>${escapeHtml(segLabel(s))}</span>`).join(" ");
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="padding:5px 4px;font-weight:600">${escapeHtml(name)}</td>
+        <td style="padding:5px 4px;text-align:center">${c.count}</td>
+        <td style="padding:5px 4px;text-align:right;font-family:monospace">${fmt(Math.round(c.totalBal))}</td>
+        <td style="padding:5px 4px;text-align:center">${segBadges}</td>
+        <td style="padding:5px 4px;text-align:center">${avgDays}d</td>
+        <td style="padding:5px 4px;text-align:right;font-family:monospace">${fmt(Math.round(c.blended))} <span style="color:var(--muted);font-size:10px">${recoveryPct}%</span></td>
+        <td style="padding:5px 4px;text-align:right;font-family:monospace;color:var(--accent)">${fmt(Math.round(esRevenue))} <span style="color:var(--muted);font-size:10px">${revOfBal}% of bal</span></td>
+        <td style="padding:5px 4px;text-align:center"><span class="badge" style="color:${roiColor};border-color:${roiColor}">${roi}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // ---------- Section C: Revenue Mix ----------
+    const settleHalf = totalSettleValue / 2;  // 50% of accounts go settlement path
+    const planHalf = totalPlanValue / 2;
+    const planHalfNet = planHalf * (1 - defaultRate);
+
+    document.getElementById("pnlSettleTotal").textContent = fmt(Math.round(settleHalf));
+    document.getElementById("pnlSettleComm").textContent = fmt(Math.round(settleCommission));
+    document.getElementById("pnlPlanTotal").textContent = fmt(Math.round(planHalf));
+    document.getElementById("pnlPlanAdjusted").textContent = fmt(Math.round(planHalfNet));
+    document.getElementById("pnlPlanComm").textContent = fmt(Math.round(planCommission));
+
+    // Sync commission % labels throughout
+    document.querySelectorAll(".commRateLabel").forEach(el => el.textContent = Math.round(rate * 100));
+
+    // ---------- Section D: Pricing Strategy ----------
+    document.getElementById("pnlRateSlider").value = Math.round(rate * 100);
+    updatePricingSlider();
+
+    // ---------- Section E: Segment Profitability ----------
+    const segStrip = document.getElementById("pnlSegStrip");
+    const segKeys = Object.keys(segmentMap).sort((a,b) => segmentMap[b].blended - segmentMap[a].blended);
+    const segCount = Math.max(segKeys.length, 1);
+    segStrip.style.gridTemplateColumns = `repeat(${Math.min(segCount, 4)}, 1fr)`;
+    segStrip.innerHTML = "";
+
+    segKeys.forEach(seg => {
+      const s = segmentMap[seg];
+      const revenue = s.blended * rate;
+      const avgBal = s.totalBal / s.count;
+      const revPerAcct = revenue / s.count;
+
+      let strategy;
+      if (revPerAcct > 150) strategy = "High value — prioritize retention and premium service";
+      else if (avgBal > 2000) strategy = "High balance — focus on settlement conversion";
+      else if (s.count > 5) strategy = "High volume, lower margin — optimize plan completion rates";
+      else strategy = "Niche segment — evaluate cost-to-serve vs revenue";
+
+      const card = document.createElement("div");
+      card.className = "kpi";
+      card.style.borderTop = `3px solid var(--seg-${seg}, var(--accent))`;
+      card.innerHTML = `
+        <div style="margin-bottom:6px"><span class="seg-badge" data-seg="${escapeHtml(seg)}" style="font-size:11px;padding:3px 8px"><span class="seg-dot"></span>${escapeHtml(segLabel(seg))}</span></div>
+        <div class="row" style="justify-content:space-between;margin-bottom:4px">
+          <span class="tiny muted">Expected revenue</span>
+          <span class="mono" style="font-size:13px;font-weight:700;color:var(--accent)">${fmt(Math.round(revenue))}</span>
+        </div>
+        <div class="row" style="justify-content:space-between;margin-bottom:4px">
+          <span class="tiny muted">Avg balance</span>
+          <span class="mono" style="font-size:12px">${fmt(Math.round(avgBal))}</span>
+        </div>
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span class="tiny muted">Accounts</span>
+          <span class="mono" style="font-size:12px">${s.count}</span>
+        </div>
+        <div class="hr"></div>
+        <div class="tiny muted" style="font-style:italic;line-height:1.4">${strategy}</div>
+      `;
+      segStrip.appendChild(card);
+    });
+  }
+
+  // Pricing slider live update
+  function updatePricingSlider(){
+    const slider = document.getElementById("pnlRateSlider");
+    if (!slider) return;
+    const customRate = parseInt(slider.value) / 100;
+    const industryRate = EASYSTREET_FEES.industryAvgRate;
+    const defaultRate = EASYSTREET_FEES.planDefaultRate;
+
+    // Compute total blended recovery with engagement rates (respects P&L filters)
+    const _sc = activeScenario();
+    const PLAN_ACTIVE_COMP = _sc.planActiveCompletion;
+    const PLAN_DEFAULT_COMP = _sc.planDefaultCompletion;
+    const OW = _sc.weights;
+    let pnlAccounts = state.accounts;
+    if (state.pnlCreditorFilter) pnlAccounts = pnlAccounts.filter(a => a.creditor === state.pnlCreditorFilter);
+    if (state.pnlSegmentFilter) pnlAccounts = pnlAccounts.filter(a => a.segment === state.pnlSegmentFilter);
+    let totalBlended = 0;
+    pnlAccounts.forEach(a => {
+      const bal = Number(a.balance) || 0;
+      const days = Number(a.days_late) || 0;
+      const bk = days >= 120 ? "gte120" : days >= 90 ? "gte90" : days >= 60 ? "gte60" : "lt60";
+      const w = OW[bk];
+      const wT = w.settlement + w.plan_active + w.plan_default + w.no_response + w.declined;
+      const sVal = bal * settleThreshold(days, a) / 100;
+      const pVal = bal * planFactor(days, a);
+      totalBlended += (w.settlement/wT) * sVal + (w.plan_active/wT) * pVal * PLAN_ACTIVE_COMP + (w.plan_default/wT) * pVal * PLAN_DEFAULT_COMP;
+    });
+
+    const fmt = v => "$" + v.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
+    const customRev = totalBlended * customRate;
+    const industryRev = totalBlended * industryRate;
+    const savings = industryRev - customRev;
+
+    document.getElementById("pnlRateLabel").textContent = slider.value + "%";
+    document.getElementById("pnlSliderRev").textContent = fmt(Math.round(customRev));
+    document.getElementById("pnlIndustryRev").textContent = fmt(Math.round(industryRev));
+    document.getElementById("pnlSavings").textContent = fmt(Math.round(savings));
+
+    // Update bar width (slider goes 5–40, bar represents proportion of 40)
+    const barPct = (parseInt(slider.value) / 40) * 100;
+    document.getElementById("pnlRateBar").style.width = barPct + "%";
   }
 
   function openAccount(id){
@@ -1505,7 +2540,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
   function addAIMessage(text){
     const div = document.createElement("div");
     div.className = "msg ai";
-    div.innerHTML = `<div>${escapeHtml(text)}</div><div class="meta">Stride AI • ${new Date().toLocaleTimeString()}</div>`;
+    div.innerHTML = `<div>${escapeHtml(text)}</div><div class="meta">EasyStreet AI • ${new Date().toLocaleTimeString()}</div>`;
     chatEl.appendChild(div);
     chatEl.scrollTop = chatEl.scrollHeight;
     chatHistory.push({role:"assistant", content:text});
@@ -1515,7 +2550,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     const div = document.createElement("div");
     div.className = "msg ai typing";
     div.id = "typingIndicator";
-    div.innerHTML = `<div class="dots"><span></span><span></span><span></span></div><div class="meta">Stride AI is thinking…</div>`;
+    div.innerHTML = `<div class="dots"><span></span><span></span><span></span></div><div class="meta">EasyStreet AI is thinking…</div>`;
     chatEl.appendChild(div);
     chatEl.scrollTop = chatEl.scrollHeight;
     return div;
@@ -1547,7 +2582,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
     const per = planEstimate(b, dl, "monthly", dur, a);
     const sPct = settleThreshold(dl, a);
     const sAmt = settlementAmount(b, sPct);
-    return `You are Stride AI, a compassionate debt resolution assistant. You help consumers find a realistic path to resolve their balance.
+    return `You are EasyStreet AI, a compassionate debt resolution assistant. You help consumers find a realistic path to resolve their balance.
 
 ACCOUNT CONTEXT:
 - Consumer: ${a.full_name || "Unknown"}
@@ -1568,7 +2603,7 @@ RULES:
 - Never guilt or pressure — you're on the consumer's side.
 - Suggest concrete numbers from the context above when relevant.
 - If they mention hardship, lead with empathy first, options second.
-- You can suggest they use the payment plan builder, settlement tool, or the "Generate offers (A/B/C)" button in the portal.
+- You can suggest they use the payment plan builder, settlement tool, or the "Generate Offers" button in the portal.
 - This is a demo — if asked about real legal specifics, say "In a production system, we'd route to a licensed agent."
 - Do not use markdown formatting. Plain text only.`;
   }
@@ -1611,9 +2646,8 @@ RULES:
   }
 
   function initialAIMessage(a){
-    const strat = activeStrategy(a);
     const first = (a.full_name || "there").split(" ")[0];
-    return `Hi ${first} — ${strat.script} You can choose a payment plan, propose a settlement, or click "Generate offers (A/B/C)" for recommended options.`;
+    return `Hi ${first}, thanks for reaching out. We're here to help you find a path forward on your account. You have a few options — you can set up a payment plan, explore a settlement, or I can walk you through some recommended options. What works best for you?`;
   }
 
   function planEstimate(balance, daysLate, freq, duration, account){
@@ -1929,7 +2963,7 @@ RULES:
       return `${strat.tone === "Supportive" ? "Understood." : "Got it."} We can move to a hardship plan. ${planHint()} If even that is tough, propose what you can do weekly and we'll try to match it.`;
     }
     if (t.includes("can't pay") || t.includes("cannot pay") || t.includes("no money")){
-      return `Thanks for being direct. Let's find something workable. ${planHint()} ${settleHint()} You can also click "Generate offers (A/B/C)".`;
+      return `Thanks for being direct. Let's find something workable. ${planHint()} ${settleHint()} You can also click "Generate Offers".`;
     }
     if (t.includes("smaller") || t.includes("lower") || t.includes("reduce") || t.includes("less")){
       return `We can reduce the payment by extending duration. ${planHint()} For the lowest payment, try Offer C after generating offers.`;
@@ -1938,7 +2972,7 @@ RULES:
       return `${settleHint()} If you submit a settlement in the portal, we'll show whether it's likely accepted (demo).`;
     }
     if (t.includes("offer") || t.includes("options") || t.includes("a/b/c")){
-      return `Click "Generate offers (A/B/C)" and choose a recommended path. I'll explain the tradeoffs if you want.`;
+      return `Click "Generate Offers" and choose a recommended path. I'll explain the tradeoffs if you want.`;
     }
     if (t.includes("stop") || t.includes("dont contact") || t.includes("do not contact")){
       return `Noted. In a real system, we'd update contact preferences and honor applicable legal requirements. You can toggle consent on the Compliance tab.`;
@@ -2068,7 +3102,112 @@ RULES:
     renderRulesCard();
     renderWizardPreview();
     renderChart();
+    renderPnL();
   }
+
+  // -------------------- Simulate Recovery --------------------
+  function simulateRecovery(){
+    if (!state.pilot.launched){ alert("Launch the recovery engine first."); return; }
+    if (!state.accounts.length){ alert("Load accounts first."); return; }
+    if (state.simulated) return;
+
+    // Outcome probability weights from active scenario
+    const OUTCOMES = activeScenario().weights;
+
+    function pickOutcome(daysLate){
+      const bucket = daysLate >= 120 ? "gte120" : daysLate >= 90 ? "gte90" : daysLate >= 60 ? "gte60" : "lt60";
+      const weights = OUTCOMES[bucket];
+      const keys = Object.keys(weights);
+      const total = Object.values(weights).reduce((s,v) => s+v, 0);
+      let roll = Math.random() * total;
+      for (const k of keys){
+        roll -= weights[k];
+        if (roll <= 0) return k;
+      }
+      return keys[keys.length - 1];
+    }
+
+    // Staggered timestamps: spread over simulated 30-day window
+    const baseTime = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    const timeSpan = 30 * 24 * 60 * 60 * 1000;
+
+    let totalRecovered = 0;
+    const timelineEvents = [];
+    let settlements = 0, plansActive = 0, plansDefaulted = 0, noResponse = 0, declined = 0;
+
+    state.accounts.forEach(a => {
+      const bal = Number(a.balance) || 0;
+      const days = Number(a.days_late) || 0;
+      const outcome = pickOutcome(days);
+
+      let recovery = 0;
+
+      switch(outcome){
+        case "settlement": {
+          const pct = settleThreshold(days, a);
+          const amt = settlementAmount(bal, pct);
+          a.status = `Settlement accepted: ${pct}% • ${money(toCents(amt))}`;
+          recovery = amt;
+          settlements++;
+          break;
+        }
+        case "plan_active": {
+          const dur = days >= 120 ? 12 : days >= 90 ? 10 : days >= 60 ? 8 : 6;
+          const perPay = planEstimate(bal, days, "monthly", dur, a);
+          // Simulate partial completion: 3 to dur payments made so far
+          const paymentsMade = Math.floor(3 + Math.random() * (dur - 2));
+          a.status = `Plan active: ${money(toCents(perPay))}/mo • ${paymentsMade} of ${dur} payments`;
+          recovery = perPay * paymentsMade;
+          plansActive++;
+          break;
+        }
+        case "plan_default": {
+          const dur = days >= 120 ? 12 : days >= 90 ? 10 : 8;
+          const perPay = planEstimate(bal, days, "monthly", dur, a);
+          const paymentsMade = 1 + Math.floor(Math.random() * 2); // 1–2 payments
+          a.status = `Plan defaulted: ${money(toCents(perPay))}/mo • ${paymentsMade} of ${dur} paid`;
+          recovery = perPay * paymentsMade;
+          plansDefaulted++;
+          break;
+        }
+        case "no_response":
+          a.status = "No response";
+          noResponse++;
+          break;
+        case "declined":
+          a.status = "Declined";
+          declined++;
+          break;
+      }
+
+      const cents = toCents(recovery);
+      a.recoveredCents = cents;
+      if (cents > 0){
+        totalRecovered += cents;
+        // Stagger the timestamp for this recovery event
+        const eventTime = baseTime + Math.random() * timeSpan;
+        timelineEvents.push({ t: eventTime, centsDelta: cents });
+      }
+    });
+
+    // Sort timeline events chronologically and add to state
+    timelineEvents.sort((a,b) => a.t - b.t);
+    state.recoveryTimeline = timelineEvents;
+    state.recoveredCents = totalRecovered;
+    state.simulated = true;
+
+    // Log summary to audit trail
+    logEvent("Recovery simulated", `${state.accounts.length} accounts processed`);
+    logEvent("Simulation results",
+      `Settlements: ${settlements} • Plans active: ${plansActive} • Plan defaults: ${plansDefaulted} • No response: ${noResponse} • Declined: ${declined}`
+    );
+    logEvent("Total recovered (sim)", money(totalRecovered));
+
+    syncPilotBadge();
+    renderAll();
+  }
+
+  document.getElementById("simulateRecovery").addEventListener("click", simulateRecovery);
 
   // -------------------- Reset --------------------
   document.getElementById("resetAll").addEventListener("click", () => {
@@ -2082,6 +3221,8 @@ RULES:
     state.pilot.launched = false;
     state.pilot.cadenceMaxPerDay = 3;
     state.pilot.metric = "recovery";
+    state.simulated = false;
+    state.scenario = "average";
 
     document.getElementById("auditRows").innerHTML = "";
     document.getElementById("csvPaste").value = "";
@@ -2096,6 +3237,18 @@ RULES:
     document.getElementById("maxPerDay").value = "3";
     document.getElementById("wizCadence").value = "3";
     document.getElementById("wizMetric").value = "recovery";
+    document.getElementById("pnlRateSlider").value = "15";
+    document.getElementById("commissionInput").value = "15";
+    EASYSTREET_FEES.commissionRate = 0.15;
+    document.querySelectorAll(".scenario-btn").forEach(b =>
+      b.classList.toggle("active", b.dataset.scenario === "average")
+    );
+    state.dashCreditorFilter = null;
+    state.pnlCreditorFilter = null;
+    state.pnlSegmentFilter = null;
+    document.getElementById("dashCreditorSelect").value = "";
+    document.getElementById("pnlCreditorSelect").value = "";
+    document.getElementById("pnlSegmentSelect").value = "";
     syncPilotBadge();
 
     logEvent("Demo reset", "State cleared");
@@ -2123,7 +3276,7 @@ RULES:
     if (key === null) return; // cancelled
     if (key.trim()){
       localStorage.setItem("stride_openai_key", key.trim());
-      alert("API key saved. AI Negotiator is now live!");
+      alert("API key saved. Resolution Assistant is now live!");
     } else {
       localStorage.removeItem("stride_openai_key");
       alert("API key cleared. Using scripted fallback.");
