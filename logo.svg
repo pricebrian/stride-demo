@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Three ascending bars matching Stride brand -->
+  <rect x="16" y="50" width="26" height="58" rx="3" fill="#3AAFA9"/>
+  <rect x="47" y="26" width="26" height="82" rx="3" fill="#2B6E6E"/>
+  <rect x="78" y="10" width="26" height="98" rx="3" fill="#5B8EC9"/>
+</svg>
