@@ -283,6 +283,31 @@
       background: rgba(11,15,20,.25);
     }
 
+    /* Acceptance confirmation card */
+    .accepted-card{
+      border:1px solid rgba(38,208,124,.4);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(38,208,124,.08), rgba(15,22,32,.55));
+      padding:20px;
+      text-align:center;
+    }
+    .accepted-card .accepted-icon{
+      width:48px; height:48px; border-radius:999px;
+      background: rgba(38,208,124,.15); border:2px solid var(--good);
+      display:inline-flex; align-items:center; justify-content:center;
+      font-size:24px; margin-bottom:12px;
+    }
+    .accepted-card .accepted-title{
+      font-size:18px; font-weight:700; margin-bottom:4px;
+    }
+    .accepted-card .accepted-detail{
+      font-size:15px; color:var(--accent); margin-bottom:12px;
+    }
+    .accepted-card .accepted-next{
+      font-size:12px; color:var(--muted);
+      border-top:1px solid var(--line); padding-top:12px; margin-top:8px;
+    }
+
     /* Mini chart */
     .chartWrap{
       border:1px solid var(--line);
@@ -476,6 +501,7 @@
         <span class="dot warn" id="pilotDot"></span>
         <span id="pilotLabel">Engine: <strong>Not launched</strong></span>
       </div>
+      <button class="btn btn-bad btn-sm" id="resetAll">Reset demo</button>
     </div>
   </div>
 </header>
@@ -528,7 +554,7 @@
     </div>
 
     <div class="dash-section">
-      <div class="section-label">Recovery Engine</div>
+      <div class="section-label">Upload Contacts & Configure Recovery Engine</div>
       <div class="grid cols-2">
         <div class="card card-hero">
         <div class="row" style="justify-content:space-between;align-items:flex-start">
@@ -559,15 +585,11 @@
           <canvas id="recoveryChart" width="900" height="240" aria-label="recoveries over time"></canvas>
         </div>
 
-        <div class="row" style="margin-top:12px;justify-content:flex-end">
-          <button class="btn btn-ghost" id="sendReminder">Send compliant reminder (sim)</button>
-          <button class="btn btn-bad" id="resetAll">Reset demo</button>
-        </div>
         <div class="tiny muted" id="reminderResult" style="margin-top:8px"></div>
       </div>
 
       <div class="card card-rules">
-        <h2>Engine rules (active)</h2>
+        <h2>Active Engine Rules</h2>
         <div class="tiny muted">Auto-applied per account segment. Scripts and thresholds route automatically.</div>
         <div class="hr"></div>
         <div class="grid" style="gap:10px">
@@ -589,12 +611,6 @@
           </div>
           <div class="hr"></div>
           <div class="tiny muted" id="ruleScript">—</div>
-          <div class="hr"></div>
-          <div class="row" style="justify-content:flex-end">
-            <button class="btn btn-ghost btn-sm open-standalone">Open in new tab</button>
-            <button class="btn btn-primary btn-sm" id="jumpConsumer">Open Consumer Portal (selected account)</button>
-          </div>
-          <div class="tiny muted">Tip: Load sample data in the wizard, open any account, then try the AI offer cards (Option A/B/C).</div>
         </div>
       </div>
     </div>
@@ -672,6 +688,7 @@
             </div>
           </div>
 
+          <div id="controlsArea">
           <div class="grid cols-2">
             <div class="card" style="background:rgba(15,22,32,.55)">
               <h2>Payment plan builder</h2>
@@ -715,6 +732,14 @@
               </div>
               <div class="tiny muted" id="settleNote" style="margin-top:8px"></div>
             </div>
+          </div>
+          </div>
+
+          <div id="acceptedCard" class="accepted-card hidden">
+            <div class="accepted-icon">&#10003;</div>
+            <div class="accepted-title" id="acceptedTitle">Accepted</div>
+            <div class="accepted-detail" id="acceptedDetail"></div>
+            <div class="accepted-next" id="acceptedNext"></div>
           </div>
         </div>
 
@@ -1083,7 +1108,6 @@
     document.body.classList.toggle("consumer-mode", name === "consumer");
   }
   document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
-  document.getElementById("jumpConsumer").addEventListener("click", () => setTab("consumer"));
   document.getElementById("exitConsumerMode").addEventListener("click", () => setTab("dash"));
 
   // -------------------- CSV parsing --------------------
@@ -1424,7 +1448,7 @@ ACCT-1005,Alex Chen,555-555-6677,alex@example.com,2050,140,Telecom Provider,tele
       document.getElementById("ruleSettle").textContent =
         `<60d ${th.lt60}% • 60–89d ${th.gte60}% • 90–119d ${th.gte90}% • 120d+ ${th.gte120}%`;
       document.getElementById("rulePlanFactor").textContent =
-        `base ${strat.planFactorBase.toFixed(3)} + delinquency adj`;
+        `${((strat.planFactorBase - 1) * 100).toFixed(1)}% base + late-fee adjustment`;
       document.getElementById("ruleScript").textContent = strat.script;
     } else if (launched){
       document.getElementById("ruleSettle").textContent = "Per-segment (select an account to view)";
@@ -1644,10 +1668,24 @@ RULES:
     document.getElementById("selName").textContent = a.full_name || "—";
     document.getElementById("selMeta").textContent = `${a.account_id} • ${a.creditor || "—"} • ${a.days_late} days late`;
     document.getElementById("selBalance").textContent = money(toCents(a.balance));
-    document.getElementById("selStatus").textContent = a.status || "Not started";
+    const statusText = a.status || "Not started";
+    const isAccepted = statusText.startsWith("Plan accepted") || statusText.startsWith("Settlement accepted");
+    document.getElementById("selStatus").textContent = statusText;
+    // Update status dot color
+    const statusDot = document.getElementById("selStatus").parentElement.querySelector(".dot");
+    if (statusDot) statusDot.className = isAccepted ? "dot good" : "dot warn";
+
     const seg = a.segment || strat.label.toLowerCase();
     document.getElementById("chipSegment").textContent = segLabel(seg);
     document.getElementById("chipSegment").setAttribute("data-seg", seg);
+
+    // Show/hide accepted card based on account state
+    if (isAccepted){
+      document.getElementById("controlsArea").classList.add("hidden");
+      document.getElementById("acceptedCard").classList.remove("hidden");
+    } else {
+      hideAcceptedCard();
+    }
 
     // plan labels
     const freq = document.querySelector('input[name="freq"]:checked').value;
@@ -1671,6 +1709,20 @@ RULES:
   document.getElementById("duration").addEventListener("input", renderConsumer);
   document.getElementById("settlePct").addEventListener("input", renderConsumer);
 
+  function showAcceptedCard(title, detail, next){
+    document.getElementById("controlsArea").classList.add("hidden");
+    const card = document.getElementById("acceptedCard");
+    card.classList.remove("hidden");
+    document.getElementById("acceptedTitle").textContent = title;
+    document.getElementById("acceptedDetail").textContent = detail;
+    document.getElementById("acceptedNext").textContent = next;
+  }
+
+  function hideAcceptedCard(){
+    document.getElementById("controlsArea").classList.remove("hidden");
+    document.getElementById("acceptedCard").classList.add("hidden");
+  }
+
   // accept plan
   document.getElementById("acceptPlan").addEventListener("click", () => {
     const a = selectedAccount();
@@ -1678,13 +1730,21 @@ RULES:
     const freq = document.querySelector('input[name="freq"]:checked').value;
     const dur = Number(document.getElementById("duration").value);
     const per = planEstimate(a.balance, a.days_late, freq, dur, a);
-    a.status = `Plan accepted: ${money(toCents(per))}/${freq==="weekly"?"wk":"mo"} • ${dur} ${freq==="weekly"?"wks":"mos"}`;
+    const freqLabel = freq === "weekly" ? "wk" : "mo";
+    const durLabel = `${dur} ${freq === "weekly" ? "weeks" : "months"}`;
+    a.status = `Plan accepted: ${money(toCents(per))}/${freqLabel} • ${durLabel}`;
     logEvent("Plan accepted", `${a.account_id} • ${a.status}`);
 
     // simulate first payment
     const firstPay = Math.min(per, Number(a.balance)||0);
     applyRecoveryDelta(toCents(firstPay), `${a.account_id} • plan first payment`);
     addAIMessage(`Great — your plan is set. First payment of ${money(toCents(per))} is scheduled. (Demo)`);
+
+    showAcceptedCard(
+      "Payment Plan Accepted",
+      `${money(toCents(per))} / ${freq === "weekly" ? "week" : "month"} for ${durLabel}`,
+      `First payment of ${money(toCents(per))} scheduled. You'll receive a confirmation email with your plan details and autopay setup instructions.`
+    );
     renderAll();
   });
 
@@ -1701,6 +1761,11 @@ RULES:
       logEvent("Settlement accepted (sim)", `${a.account_id} • ${money(toCents(amt))}`);
       applyRecoveryDelta(toCents(amt), `${a.account_id} • settlement paid`);
       addAIMessage(`We can accept ${pct}% for ${money(toCents(amt))}. Once paid, the account will be resolved. (Demo)`);
+      showAcceptedCard(
+        "Settlement Accepted",
+        `${money(toCents(amt))} one-time payment (${pct}% of balance)`,
+        `Payment received. This account will be marked as resolved. You'll receive a settlement confirmation letter for your records.`
+      );
     } else {
       const threshold = settleThreshold(Number(a.days_late)||0, a);
       const counterPct = Math.min(95, Math.max(threshold, pct + 8));
@@ -1913,15 +1978,6 @@ RULES:
     const out = channel === "None" ? {ok:false,msg:"Blocked: no consented channels enabled (demo)."} : sendMessageSim(channel);
     document.getElementById("cadenceMsg").textContent = out.msg;
     logEvent("Outbound message attempt", `${out.ok ? "OK" : "BLOCKED"} • ${out.msg}`);
-  });
-
-  document.getElementById("sendReminder").addEventListener("click", () => {
-    const sms = document.getElementById("consentSms").checked;
-    const email = document.getElementById("consentEmail").checked;
-    const channel = sms ? "SMS" : email ? "Email" : "None";
-    const out = channel === "None" ? {ok:false,msg:"Blocked: no consented channels enabled (demo)."} : sendMessageSim(channel);
-    document.getElementById("reminderResult").textContent = out.msg;
-    logEvent("Reminder send", `${out.ok ? "OK" : "BLOCKED"} • ${out.msg}`);
   });
 
   // -------------------- Recoveries chart --------------------
